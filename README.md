@@ -16,12 +16,7 @@ FlyCms比论坛更开放，比资讯网站更了解用户，以用户为中心�
 ##### 用戶互助，精准推送  
 用户之间相互解答，分享产品使用心得，只向用户推送自己关心的消息，扩大价值，压缩干扰。  
 
- 
 
-> 使用说明：请保留页面底部的 *powered by 97560. com* 感谢支持
-
-
-在线地址: [97560.com](http://www.97560.com)
 
 ## 技术栈
 
@@ -88,21 +83,6 @@ FlyCms比论坛更开放，比资讯网站更了解用户，以用户为中心�
 3. 项目已经接入了solr，程序安装需要先运行solr，solr已调试好，可直接启动，使用方法可访问官网查看；
 4. 项目用到了阿里大于jar包，Maven时无法使用，可以下载doc/dysmsapi.zip，然后放本地的Maven的.m2\repository\com\alibaba\aliyun\目录下
 5. 搜索和首页列表后期大部分前台列表准备都使用solr，所以要先下载目录下的solr，然后运行后启动程序，不然报错！
-
-#### solr原来的目录里上传的时候jar文件无法上传，压缩后提示上传文件不能大于10MB
-
-## 如果需要的话进群空间下载，QQ群：`211378508`
-## Windows下solr启动  
-- 比如solr放E:/盘下面，首先打开CMD窗口
-- `e: `回车
-- `cd e:/solr/bin` 回车
-- `solr start -p 8983` 回车，等待启动成功
-- `solr stop -p 8983` 这个是停止solr命令
-
-## Linux下启动
-- `cd /root/webapp/solr`
-- `./bin/solr start -p 8983 -force` 回车，等待启动成功
-- `./bin/solr stop -p 8983 -force` 这个是停止solr命令
 
 
 - 创建数据库pybbs, 字符集utf8，如果想支持emoji，就要选择utf8mb4字符集（仅限使用MySQL数据库）  
