@@ -11,11 +11,12 @@ import org.springframework.boot.web.servlet.support.SpringBootServletInitializer
 import org.springframework.cache.annotation.EnableCaching;
 
 
+/**
+ * @author cs
+ * @date 2020/10/11
+ */
 @SpringBootApplication(exclude = {ErrorMvcAutoConfiguration.class,DataSourceAutoConfiguration.class})
 @ServletComponentScan
-/**
- * 此注解表示动态扫描DAO接口所在包
- */
 @MapperScan("com.flycms.module.**.dao")
 @EnableCaching
 public class Application extends SpringBootServletInitializer {
