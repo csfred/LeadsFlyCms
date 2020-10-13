@@ -534,7 +534,7 @@
     </select>
 
 	<!-- 根据seeeionKey查询用户登录时间 -->
-	<select id="findUserSessionBySeeeionKey" resultType="com.flycms.module.user.model.UserSession">
+	<select id="findUserSessionBySessionKey" resultType="com.flycms.module.user.model.UserSession">
 		select * from fly_user_session where session_key = #{sessionKey} order by update_time desc limit 1
 	</select>
 

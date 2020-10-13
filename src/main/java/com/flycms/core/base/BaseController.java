@@ -17,29 +17,28 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
 /**
- * Open source house, All rights reserved
- * 开发公司：28844.com<br/>
- * 版权：开源中国<br/>
- *
  *  Controller基类
  *
- * @author sun-kaifei
- * @version 1.0 <br/>
- * @email 79678111@qq.com
- * @Date: 14:14 2018/7/8
+ * @author aa
+ * @date 2020/10/11
  */
 
 public class BaseController {
     @Resource
     protected HttpServletRequest request;
+
     @Resource
     protected HttpServletResponse response;
+
 	@Autowired
 	protected AdminService adminService;
+
     @Autowired
 	protected UserService userService;
+
     @Resource
     protected HttpSession session;
+
 	@Autowired
 	protected TemplateService theme;
 
@@ -48,6 +47,15 @@ public class BaseController {
 	   *
 	   * @return
 	   */
+	protected User getUser(HttpServletRequest request) {
+		User user = UserSessionUtils.getLoginMember(request);
+		if (StringUtils.isEmpty(user)) {
+			return null;
+		} else {
+			return userService.findUserById(user.getUserId(),0);
+		}
+	}
+
 	protected User getUser() {
 		User user = UserSessionUtils.getLoginMember(request);
 		if (StringUtils.isEmpty(user)) {
@@ -62,6 +70,15 @@ public class BaseController {
 	 *
 	 * @return
 	 */
+	protected Admin getAdminUser(HttpServletRequest request) {
+		Admin user = AdminSessionUtils.getLoginMember(request);
+		if (StringUtils.isEmpty(user)) {
+			return null;
+		} else {
+			return adminService.findAdminById(user.getId(),0);
+		}
+	}
+
 	protected Admin getAdminUser() {
 		Admin user = AdminSessionUtils.getLoginMember(request);
 		if (StringUtils.isEmpty(user)) {

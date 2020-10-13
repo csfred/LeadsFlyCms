@@ -16,49 +16,46 @@ import com.flycms.module.user.utils.UserSessionUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.math.NumberUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
+import javax.annotation.Resource;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.transaction.Transactional;
 import java.util.*;
+
 /**
- * 开发公司：28844.com<br/>
- * 版权：28844.com<br/>
  *
- * @author sun-kaifei
- * @version 1.0 <br/>
- * @email 79678111@qq.com
- * @Date: 12:14 2018/7/9
+ * @author aa
+ * @date 2020/10/11
  */
 @Slf4j
 @Service
 public class UserService {
-    @Autowired
+    @Resource
     private UserDao userDao;
-    @Autowired
+    @Resource
     private UserInviteService userInviteService;
 
-    @Autowired
+    @Resource
     private SmsapiService smsapiService;
 
-    @Autowired
+    @Resource
     private ConfigService configService;
 
-    @Autowired
+    @Resource
     private ScoreRuleService scoreRuleService;
 
-    @Autowired
+    @Resource
     private EmailService emailService;
 
-    @Autowired
+    @Resource
     private UserSessionUtils userSessionUtils;
 
-    @Autowired
+    @Resource
     private SiteConst siteConst;
     // ///////////////////////////////
     // /////       增加       ////////
@@ -149,7 +146,11 @@ public class UserService {
         return DataVo.success("用户注册成功");
     }
 
-    //添加新用户信息
+    /**
+     * 添加新用户信息
+     * @param user
+     * @return
+     */
     @CacheEvict(value = "user", allEntries = true)
     @Transactional
     public DataVo adminAddUser(User user){
@@ -158,7 +159,7 @@ public class UserService {
             return data=DataVo.success("用户名不能为空！");
         }
         if(user.getPassword()!=null){
-            if(!user.getPassword().equals(user.getRepassword())){
+            if(!user.getPassword().equals(user.getRePassword())){
                 return data=DataVo.success("两次密码不一样");
             }
         }else{
@@ -271,15 +272,20 @@ public class UserService {
         return data;
     }
 
-    //按Sessionid查询删除用户登陆保持记录
+    /**
+     * 按Sessionid查询删除用户登陆保持记录
+     * @param request
+     * @param response
+     */
     public void signOutLogin(HttpServletRequest request,HttpServletResponse response) {
         if(request.getSession()!=null){
             User userLogin = (User) request.getSession().getAttribute(Const.SESSION_USER);
             if(userLogin !=null && userLogin.getSessionKey()!=null){
                 userDao.deleteUserSessionBySessionKey(userLogin.getSessionKey());
-                //清除session
-                request.getSession().removeAttribute(Const.SESSION_USER);//我这里是先取出httpsession中的user属性
-                request.getSession().invalidate();  //然后是让httpsession失效
+                //清除session //我这里是先取出httpsession中的user属性
+                request.getSession().removeAttribute(Const.SESSION_USER);
+                //然后是让httpsession失效
+                request.getSession().invalidate();
             }
         }
         //清除cookie
@@ -305,7 +311,7 @@ public class UserService {
      * @throws Exception
      */
     @CacheEvict(value = "user", allEntries = true)
-    @Transactional
+    @Transactional(rollbackOn = RuntimeException.class)
     public User userLogin(String username, String password,boolean keepLogin,HttpServletRequest request,HttpServletResponse response)throws Exception {
         User user = null;
         if(StringHelperUtils.checkPhoneNumber(username)) {
@@ -342,9 +348,13 @@ public class UserService {
         return user;
     }
 
-    //更新用户信息
+    /**
+     * 更新用户信息
+     * @param user
+     * @return
+     */
     @CacheEvict(value = "user", allEntries = true)
-    @Transactional
+    @Transactional(rollbackOn = RuntimeException.class)
     public DataVo updateUser(User user){
         DataVo data = DataVo.failure("操作失败");
         if(user.getUserId()==null){
@@ -517,7 +527,11 @@ public class UserService {
         return data = DataVo.jump("密码已修改","/ucenter/password");
     }
 
-    //前台用户信息修改信息
+    /**
+     * 前台用户信息修改信息
+     * @param user
+     * @return
+     */
     @CacheEvict(value = "user", allEntries = true)
     @Transactional
     public DataVo updateUserAccount(User user){
@@ -663,7 +677,7 @@ public class UserService {
      * @return
      * @throws Exception
      */
-    @Transactional
+    @Transactional(rollbackOn = RuntimeException.class)
     public DataVo safeEmailVerify(String userEmail,Long userId) throws Exception {
         if (this.checkUserByEmail(userEmail,userId)) {
             return DataVo.failure("该用户已存在，请换其他账户！");
@@ -692,7 +706,7 @@ public class UserService {
      * @throws Exception
      */
     @CacheEvict(value = "user", allEntries = true)
-    @Transactional
+    @Transactional(rollbackOn = RuntimeException.class)
     public DataVo updateGetBackPassword(String username, String code, String password) throws Exception {
         DataVo data = DataVo.failure("操作失败");
         User user = null;
@@ -723,7 +737,7 @@ public class UserService {
      * @return
      * @throws Exception
      */
-    @Transactional
+    @Transactional(rollbackOn = RuntimeException.class)
     public DataVo getEmailBackCode(String userEmail) throws Exception {
         if (!this.checkUserByEmail(userEmail,null)) {
             return DataVo.failure("该用户不存在，请检查账户是否正确！");
@@ -793,10 +807,14 @@ public class UserService {
         return userDao.findUserAccountById(userId);
     }
 
-    //按id查询用户是否存在
+    /**
+     * 按id查询用户是否存在
+     * @param userId
+     * @return
+     */
     public boolean checkUserById(Long userId){
         int totalCount = userDao.checkUserById(userId);
-        return totalCount > 0 ? true : false;
+        return totalCount > 0;
     }
 
     /**
@@ -867,7 +885,7 @@ public class UserService {
      */
     public boolean checkUserByUserName(String userName,Long userId) {
         int totalCount = userDao.checkUserByUserName(userName,userId);
-        return totalCount > 0 ? true : false;
+        return totalCount > 0;
     }
 
     /**
@@ -881,7 +899,7 @@ public class UserService {
      */
     public boolean checkUserByMobile(String userMobile,Long userId) {
         int totalCount = userDao.checkUserByMobile(userMobile,userId);
-        return totalCount > 0 ? true : false;
+        return totalCount > 0;
     }
 
     /**
@@ -895,7 +913,7 @@ public class UserService {
      */
     public boolean checkUserByEmail(String userEmail,Long userId) {
         int totalCount = userDao.checkUserByEmail(userEmail,userId);
-        return totalCount > 0 ? true : false;
+        return totalCount > 0;
     }
 
     /**
@@ -909,7 +927,7 @@ public class UserService {
      */
     public boolean checkUserByNickName(String nickName,Long userId) {
         int totalCount = userDao.checkUserByNickName(nickName,userId);
-        return totalCount > 0 ? true : false;
+        return totalCount > 0;
     }
 
     /**
@@ -921,7 +939,7 @@ public class UserService {
      */
     public boolean checkUserByRole(Long userId) {
         int totalCount = userDao.checkUserByRole(userId);
-        return totalCount > 0 ? true : false;
+        return totalCount > 0;
     }
 
     /**
@@ -935,7 +953,7 @@ public class UserService {
      */
     public boolean checkUserByActivation(Long userId,Long groupId) {
         int totalCount = userDao.checkUserByActivation(userId,groupId);
-        return totalCount > 0 ? true : false;
+        return totalCount > 0;
     }
 
     /**
@@ -972,7 +990,7 @@ public class UserService {
     @Cacheable(value = "user")
     public boolean checkUserFans(Long userFollow,Long userFans){
         int totalCount = userDao.checkUserFans(userFollow,userFans);
-        return totalCount > 0 ? true : false;
+        return totalCount > 0;
     }
 
     /**
@@ -988,7 +1006,7 @@ public class UserService {
     @Cacheable(value = "user")
     public boolean checkUserMutualFans(Long userFollow,Long userFans){
         int totalCount = userDao.checkUserMutualFans(userFollow,userFans);
-        return totalCount == 2 ? true : false;
+        return totalCount == 2;
     }
 
     /**
@@ -1000,7 +1018,8 @@ public class UserService {
     public boolean kbbeNickname(String nickname){
         String kbbeUser=configService.getStringByKey("user_notallow");
         if(kbbeUser!=null){
-            String[] notallow = kbbeUser.split(","); //转换为数组
+            //转换为数组
+            String[] notallow = kbbeUser.split(",");
             for (String s : notallow) {
                 if (s.equals(nickname)) {
                     return true;
@@ -1099,16 +1118,16 @@ public class UserService {
      *        用户seeeionKey
      * @return
      */
-    public UserSession findUserSessionBySeeeionKey(String sessionKey) {
-        return userDao.findUserSessionBySeeeionKey(sessionKey);
+    public UserSession findUserSessionBySessionKey(String sessionKey) {
+        return userDao.findUserSessionBySessionKey(sessionKey);
     }
 
     /**
      * 登录会话是否已过期
      */
-    public boolean isExpireTime(Long expireTime) {
+    public boolean isNotExpireTime(Long expireTime) {
         //如果小于当前时间加120分钟说明不是用户选择的长期在线
-        return expireTime < System.currentTimeMillis()+(120 * 60 * 1000);
+        return expireTime >= System.currentTimeMillis()+(120 * 60 * 1000);
     }
 
     /**

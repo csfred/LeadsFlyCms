@@ -2,7 +2,6 @@ package com.flycms.filter;
 
 import com.flycms.constant.Const;
 import com.flycms.constant.SiteConst;
-import com.flycms.core.base.BaseController;
 import com.flycms.core.utils.CookieUtils;
 import com.flycms.module.user.model.User;
 import com.flycms.module.user.model.UserSession;
@@ -10,8 +9,8 @@ import com.flycms.module.user.service.UserService;
 import com.flycms.module.user.utils.UserSessionUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 
+import javax.annotation.Resource;
 import javax.servlet.annotation.WebFilter;
 import javax.servlet.*;
 import java.io.IOException;
@@ -20,26 +19,22 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
 /**
- * Open source house, All rights reserved
- * 版权：28844.com<br/>
- * 开发公司：28844.com<br/>
  *
  * 全站过滤器，获取用户url携带邀请参数，记录邀请人id
  *
- * @author sun-kaifei
- * @version 1.0 <br/>
- * @email 79678111@qq.com
- * @Date: 9:51 2018/9/12
+ * @author aa
+ * @date 2020/10/11
  */
 @Slf4j
 @WebFilter(filterName="myFilter",urlPatterns="/*")
 public class FlyFilter implements Filter {
-    @Autowired
+    @Resource
     private UserService userService;
 
-    @Autowired
+    @Resource
     private UserSessionUtils userSessionUtils;
-    @Autowired
+
+    @Resource
     private SiteConst siteConst;
 
     @Override
@@ -63,12 +58,13 @@ public class FlyFilter implements Filter {
             if(session!=null && session.getAttribute(Const.SESSION_USER) != null){
                 User userLogin = (User) httpRequest.getSession().getAttribute(Const.SESSION_USER);
                 if(!(userLogin.getSessionKey()).equals(sessionKey)){
-                    UserSession userSession=userService.findUserSessionBySeeeionKey(sessionKey);
+                    UserSession userSession=userService.findUserSessionBySessionKey(sessionKey);
                     if(userSession!=null){
-                        if (!userService.isExpireTime(userSession.getExpireTime())) {  // session 未过期
+                        // session 未过期
+                        if (userService.isNotExpireTime(userSession.getExpireTime())) {
                             User user=userService.findUserById(userSession.getUserId(),0);
                             long expireTime = System.currentTimeMillis() + (120 * 60 * 1000);
-                            boolean keepLogin = userSession.getExpireTime()> expireTime ? true : false;
+                            boolean keepLogin = userSession.getExpireTime()> expireTime;
                             //用户信息写入session
                             userSessionUtils.setLoginMember(httpRequest,httpResponse,keepLogin,user);
                         }else{
@@ -78,9 +74,10 @@ public class FlyFilter implements Filter {
                     }
                 }
             }else{
-                UserSession userSession=userService.findUserSessionBySeeeionKey(sessionKey);
+                UserSession userSession=userService.findUserSessionBySessionKey(sessionKey);
                 if(userSession!=null){
-                    if (!userService.isExpireTime(userSession.getExpireTime())) {  // session 未过期
+                    // session 未过期
+                    if (userService.isNotExpireTime(userSession.getExpireTime())) {
                         User user=userService.findUserById(userSession.getUserId(),0);
                         //用户信息更新session
                         userSessionUtils.updateLoginMember(httpRequest,httpResponse,sessionKey,user);

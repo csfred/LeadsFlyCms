@@ -22,6 +22,8 @@ import org.springframework.web.bind.annotation.ResponseBody;
 
 import javax.annotation.Resource;
 import javax.imageio.ImageIO;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
@@ -30,8 +32,13 @@ import java.io.PrintWriter;
 import java.text.ParseException;
 import java.util.List;
 
+/**
+ * @author cs
+ * @date 2020/10/11
+ */
 @Controller
 public class UserController extends BaseController {
+
     @Resource
     protected UserService userService;
 
@@ -45,7 +52,9 @@ public class UserController extends BaseController {
      * @return
      */
     @GetMapping(value = "/reg")
-    public String userReg(@RequestParam(value = "invite", required = false) String invite,ModelMap modelMap){
+    public String userReg(@RequestParam(value = "invite", required = false) String invite,
+                          ModelMap modelMap,
+                          HttpServletRequest request){
         if(invite==null){
             invite=CookieUtils.getCookie(request,"invite");
         }
@@ -67,16 +76,14 @@ public class UserController extends BaseController {
     @PostMapping(value = "/ucenter/mobilecode")
     public DataVo getAddUserMobileCode(@RequestParam(value = "username", required = false) String username,
                                        @RequestParam(value = "captcha", required = false) String captcha) throws Exception {
-        DataVo data = DataVo.failure("操作失败");
-        String kaptcha = (String) session.getAttribute("kaptcha");
+        DataVo data;
+        String kaptcha = getObjString(session.getAttribute("kaptcha"));
         // 校验验证码
-        if (captcha != null) {
-            if (!captcha.equalsIgnoreCase(kaptcha)) {
-                return DataVo.failure("验证码错误");
-            }
+        data = checkVerifyCode(captcha,kaptcha);
+        if (data != null) {
+            return data;
+        }else {
             session.removeAttribute(Const.KAPTCHA_SESSION_KEY);
-        }else{
-            return DataVo.failure("验证码不能为空");
         }
         if(!StringHelperUtils.checkPhoneNumber(username)) {
             return DataVo.failure("手机号码错误！");
@@ -98,9 +105,9 @@ public class UserController extends BaseController {
                           @RequestParam(value = "password", required = false) String password,
                           @RequestParam(value = "password2", required = false) String password2,
                           @RequestParam(value = "invite", required = false) String invite,
-                          @RequestParam(value = "captcha", required = false) String captcha
-    ) {
-        DataVo data = DataVo.failure("操作失败");
+                          @RequestParam(value = "captcha", required = false) String captcha,
+                          HttpServletRequest request, HttpServletResponse response) {
+        DataVo data;
         try {
             username=username.trim();
             password=password.trim();
@@ -131,7 +138,7 @@ public class UserController extends BaseController {
             if (!password.equals(password2)) {
                 return DataVo.failure("密码两次输入不一致");
             }
-            data = userService.addUserReg(3,username, password,null,invite,request,response);
+            userService.addUserReg(3,username, password,null,invite,request,response);
             return DataVo.success("操作成功");
         } catch (Exception e) {
             data = DataVo.failure(e.getMessage());
@@ -145,18 +152,18 @@ public class UserController extends BaseController {
                                 @RequestParam(value = "mobilecode", required = false) String mobilecode,
                                 @RequestParam(value = "password", required = false) String password,
                                 @RequestParam(value = "password2", required = false) String password2,
-                                @RequestParam(value = "invite", required = false) String invite) throws Exception{
-        DataVo data = DataVo.failure("操作失败");
+                                @RequestParam(value = "invite", required = false) String invite,
+                                HttpServletRequest request, HttpServletResponse response) throws Exception{
         if (mobilecode == null) {
-            return data = DataVo.failure("验证码不能为空");
+            return DataVo.failure("验证码不能为空");
         }
         if (password == null) {
-            return data = DataVo.failure("密码不能为空");
+            return DataVo.failure("密码不能为空");
         }
         if(!password.equals(password2)){
-            return data = DataVo.failure("两次密码输入不一样");
+            return DataVo.failure("两次密码输入不一样");
         }
-        return data = userService.addUserReg(1,phoneNumber, password,mobilecode,invite,request,response);
+        return userService.addUserReg(1,phoneNumber, password,mobilecode,invite,request,response);
     }
 
     /**
@@ -166,8 +173,10 @@ public class UserController extends BaseController {
      * @return
      */
     @GetMapping(value = "/login")
-    public String userLogin(@RequestParam(value = "redirectUrl",required = false) String redirectUrl,ModelMap modelMap){
-        if(getUser() != null){
+    public String userLogin(@RequestParam(value = "redirectUrl",required = false) String redirectUrl,
+                            ModelMap modelMap,
+                            HttpServletRequest request){
+        if(getUser(request) != null){
             return "redirect:/index";
         }
         modelMap.addAttribute("redirectUrl",redirectUrl);
@@ -190,26 +199,24 @@ public class UserController extends BaseController {
             @RequestParam(value = "password", required = false) String password,
             @RequestParam(value = "rememberMe", required = false) String rememberMe,
             @RequestParam(value = "redirectUrl",required = false) String redirectUrl,
-            @RequestParam(value = "captcha", required = false) String captcha) {
+            @RequestParam(value = "captcha", required = false) String captcha,
+            HttpServletRequest request, HttpServletResponse response) {
         try {
-            String kaptcha = (String) session.getAttribute("kaptcha");
+            String kaptcha = getObjString(session.getAttribute("kaptcha"));
             if (StringUtils.isBlank(username)) {
                 return DataVo.failure("用户名不能为空");
             }
             if (StringUtils.isBlank(password)) {
                 return DataVo.failure("密码不能为空");
-            } else if (password.length() < 6 && password.length() > 30) {
+            } else if (password.length() < 6 || password.length() > 30) {
                 return DataVo.failure("密码最少6个字符，最多30个字符");
             }
-            // 校验验证码
-            if (captcha != null) {
-                if (!captcha.equalsIgnoreCase(kaptcha)) {
-                    return DataVo.failure("验证码错误");
-                }
-            }else{
-                return DataVo.failure("验证码不能为空");
+            //校验验证码
+            DataVo verify = checkVerifyCode(captcha,kaptcha);
+            if(null != verify){
+                return verify;
             }
-            boolean keepLogin = "1".equals(rememberMe) ? true : false;
+            boolean keepLogin = "1".equals(rememberMe);
             User entity = userService.userLogin(username,password,keepLogin,request,response);
             if(entity==null){
                 return DataVo.failure("帐号或密码错误。");
@@ -225,6 +232,27 @@ public class UserController extends BaseController {
         }
     }
 
+    private String getObjString(Object obj){
+        return obj == null ? "" : obj.toString();
+    }
+
+    /**
+     * 校验验证码
+     * @param captcha
+     * @param kaptcha
+     * @return
+     */
+    private DataVo checkVerifyCode(String captcha, String kaptcha){
+        if (captcha != null) {
+            if (!captcha.equalsIgnoreCase(kaptcha)) {
+                return DataVo.failure("验证码错误");
+            }
+        }else{
+            return DataVo.failure("验证码不能为空");
+        }
+        return null;
+    }
+
     /**
      * 页面ajax登录处理
      *
@@ -237,27 +265,24 @@ public class UserController extends BaseController {
     public DataVo userAjaxLogin( @RequestParam(value = "username", required = false) String username,
                                  @RequestParam(value = "password", required = false) String password,
                                  @RequestParam(value = "rememberMe", required = false) String rememberMe,
-                                 @RequestParam(value = "code", required = false) String code) {
-        DataVo data = DataVo.failure("操作失败");
+                                 @RequestParam(value = "code", required = false) String code,
+                                 HttpServletRequest request, HttpServletResponse response) {
+        DataVo data;
         try {
-            String kaptcha = (String) session.getAttribute("kaptcha");
             if (StringUtils.isBlank(username)) {
                 return DataVo.failure("用户名不能为空");
             }
             if (StringUtils.isBlank(password)) {
                 return DataVo.failure("密码不能为空");
-            } else if (password.length() < 6 && password.length() > 30) {
+            } else if (password.length() < 6 || password.length() > 30) {
                 return DataVo.failure("密码最少6个字符，最多30个字符");
             }
             // 校验验证码
-            if (code != null) {
-                if (!code.equalsIgnoreCase(kaptcha)) {
-                    return DataVo.failure("验证码错误");
-                }
-            }else{
-                return DataVo.failure("验证码不能为空");
+            DataVo verify = checkVerifyCode(code,getObjString(session.getAttribute("kaptcha")));
+            if(null != verify){
+                return verify;
             }
-            boolean keepLogin = "1".equals(rememberMe) ? true : false;
+            boolean keepLogin = "1".equals(rememberMe);
             User entity = userService.userLogin(username,password,keepLogin,request,response);
             if(entity==null){
                 return DataVo.failure("帐号或密码错误。");
@@ -277,8 +302,8 @@ public class UserController extends BaseController {
      * @return
      */
     @GetMapping(value = "/ucenter/account")
-    public String userAccount(ModelMap modelMap){
-        modelMap.addAttribute("user", getUser());
+    public String userAccount(ModelMap modelMap,HttpServletRequest request){
+        modelMap.addAttribute("user", getUser(request));
         return theme.getPcTemplate("user/account");
     }
 
@@ -291,8 +316,9 @@ public class UserController extends BaseController {
      */
     @PostMapping("/ucenter/account_update")
     @ResponseBody
-    public DataVo updateUserAccount(@Valid User user, BindingResult result){
-        DataVo data = DataVo.failure("操作失败");
+    public DataVo updateUserAccount(@Valid User user, BindingResult result,
+                                    HttpServletRequest request){
+        DataVo data;
         try {
             if (result.hasErrors()) {
                 List<ObjectError> list = result.getAllErrors();
@@ -302,30 +328,29 @@ public class UserController extends BaseController {
                 return null;
             }
             if(!StringUtils.isNumeric(user.getUserId().toString())){
-                return data=DataVo.failure("请勿非法传递数据！");
+                return DataVo.failure("请勿非法传递数据！");
             }
-            if(!user.getUserId().equals(getUser().getUserId())){
-                return data=DataVo.failure("请勿非法传递数据！");
+            if(!user.getUserId().equals(getUser(request).getUserId())){
+                return DataVo.failure("请勿非法传递数据！");
             }
-            if(!getUser().getUserId().equals(user.getUserId())){
-                return data=DataVo.failure("只能修改属于自己的基本信息！");
+            if(!getUser(request).getUserId().equals(user.getUserId())){
+                return DataVo.failure("只能修改属于自己的基本信息！");
             }
             if(StringUtils.isBlank(user.getNickName())){
-                return data=DataVo.failure("昵称不能为空！");
+                return DataVo.failure("昵称不能为空！");
             }
             if(user.getBirthday()==null || "".equals(user.getBirthday())){
-                return data=DataVo.failure("请选择您的生日日期！");
+                return DataVo.failure("请选择您的生日日期！");
             }
             if(DateUtils.isValidDate(user.getBirthday().toString())){
-                return data=DataVo.failure("生日日期格式错误！");
+                return DataVo.failure("生日日期格式错误！");
             }
             if(user.getProvince()==0){
-                return data=DataVo.failure("省份未选择！");
+                return DataVo.failure("省份未选择！");
             }
             if(user.getCity()==0){
-                return data=DataVo.failure("地区为选择！");
+                return DataVo.failure("地区为选择！");
             }
-
             data = userService.updateUserAccount(user);
         } catch (Exception e) {
             data = DataVo.failure(e.getMessage());
@@ -339,8 +364,8 @@ public class UserController extends BaseController {
      * @return
      */
     @GetMapping(value = "/ucenter/safe_mobile")
-    public String safeMobile(ModelMap modelMap){
-        modelMap.addAttribute("user", getUser());
+    public String safeMobile(ModelMap modelMap,HttpServletRequest request){
+        modelMap.addAttribute("user", getUser(request));
         return theme.getPcTemplate("user/safe_mobile");
     }
 
@@ -354,9 +379,11 @@ public class UserController extends BaseController {
      */
     @ResponseBody
     @PostMapping(value = "/ucenter/safemobilecode")
-    public DataVo safeMobileCode(@RequestParam(value = "mobile", required = false) String mobile, @RequestParam(value = "captcha", required = false) String captcha) throws Exception {
-        DataVo data = DataVo.failure("操作失败");
-        String kaptcha = (String) session.getAttribute("kaptcha");
+    public DataVo safeMobileCode(@RequestParam(value = "mobile", required = false) String mobile,
+                                 @RequestParam(value = "captcha", required = false) String captcha,
+                                 HttpServletRequest request) throws Exception {
+        DataVo data;
+        String kaptcha = getObjString(session.getAttribute("kaptcha"));
         // 校验验证码
         if (captcha != null) {
             if (!captcha.equalsIgnoreCase(kaptcha)) {
@@ -369,7 +396,7 @@ public class UserController extends BaseController {
         if(!StringHelperUtils.checkPhoneNumber(mobile)) {
             return DataVo.failure("手机号码错误！");
         }
-        data = userService.safeMobileCode(getUser().getUserId(),mobile);
+        data = userService.safeMobileCode(getUser(request).getUserId(),mobile);
         return data;
     }
 
@@ -378,21 +405,22 @@ public class UserController extends BaseController {
     public DataVo safeMobile(
             @RequestParam(value = "password", required = false) String password,
             @RequestParam(value = "mobile", required = false) String mobile,
-            @RequestParam(value = "code", required = false) String code) {
-        DataVo data = DataVo.failure("操作失败");
+            @RequestParam(value = "code", required = false) String code,
+            HttpServletRequest request) {
+        DataVo data;
         try {
             if (StringUtils.isBlank(password)) {
                 return DataVo.failure("密码不能为空");
-            } else if (password.length() < 6 && password.length() >= 32) {
+            } else if (password.length() < 6 || password.length() >= 32) {
                 return DataVo.failure("密码最少6个字符，最多32个字符");
             }
             if(!StringHelperUtils.checkPhoneNumber(mobile)) {
                 return DataVo.failure("手机号码错误！");
             }
-            if (code == null && "".equals(code)) {
+            if (code == null || "".equals(code)) {
                 return DataVo.failure("验证码不能为空");
             }
-            data=userService.updateSafeMobile(getUser().getUserId(),password, mobile, code);
+            data=userService.updateSafeMobile(getUser(request).getUserId(),password, mobile, code);
         } catch (Exception e) {
             data = DataVo.failure(e.getMessage());
         }
@@ -405,20 +433,21 @@ public class UserController extends BaseController {
      * @return
      */
     @GetMapping(value = "/ucenter/safe_email")
-    public String safeEmail(ModelMap modelMap){
-        modelMap.addAttribute("user", getUser());
+    public String safeEmail(ModelMap modelMap,HttpServletRequest request){
+        modelMap.addAttribute("user", getUser(request));
         return theme.getPcTemplate("user/safe_email");
     }
 
     @ResponseBody
     @PostMapping(value = "/ucenter/safe_email_code")
-    public DataVo userAjaxMailCaptcha(@RequestParam(value = "userEmail", required = false) String userEmail) {
-        DataVo data = DataVo.failure("操作失败");
+    public DataVo userAjaxMailCaptcha(@RequestParam(value = "userEmail", required = false) String userEmail,
+                                      HttpServletRequest request) {
+        DataVo data;
         try {
             if (!StringHelperUtils.emailFormat(userEmail)) {
                 return DataVo.failure("邮箱格式错误！");
             }
-            return userService.safeEmailVerify(userEmail,getUser().getUserId());
+            return userService.safeEmailVerify(userEmail,getUser(request).getUserId());
         } catch (Exception e) {
             data = DataVo.failure(e.getMessage());
         }
@@ -430,22 +459,23 @@ public class UserController extends BaseController {
     public DataVo safeEmail(
             @RequestParam(value = "password", required = false) String password,
             @RequestParam(value = "userEmail", required = false) String userEmail,
-            @RequestParam(value = "code", required = false) String code) {
-        DataVo data = DataVo.failure("操作失败");
+            @RequestParam(value = "code", required = false) String code,
+            HttpServletRequest request) {
+        DataVo data;
         try {
             // 校验验证码
-            if (code == null && "".equals(code)) {
+            if (code == null || "".equals(code)) {
                 return DataVo.failure("验证码不能为空");
             }
             if (StringUtils.isBlank(password)) {
                 return DataVo.failure("新密码不能为空");
-            } else if (password.length() < 6 && password.length() >= 32) {
+            } else if (password.length() < 6 || password.length() >= 32) {
                 return DataVo.failure("密码最少6个字符，最多32个字符");
             }
             if(!StringHelperUtils.emailFormat(userEmail)) {
                 return DataVo.failure("邮箱地址错误！");
             }
-            data=userService.updateSafeEmail(getUser().getUserId(), password, userEmail,code);
+            data=userService.updateSafeEmail(getUser(request).getUserId(), password, userEmail,code);
         } catch (Exception e) {
             data = DataVo.failure(e.getMessage());
         }
@@ -458,8 +488,8 @@ public class UserController extends BaseController {
      * @return
      */
     @GetMapping(value = "/ucenter/integral")
-    public String userIntegral(ModelMap modelMap){
-        modelMap.addAttribute("user", getUser());
+    public String userIntegral(ModelMap modelMap,HttpServletRequest request){
+        modelMap.addAttribute("user", getUser(request));
         return theme.getPcTemplate("user/integral");
     }
 
@@ -469,8 +499,8 @@ public class UserController extends BaseController {
      * @return
      */
     @GetMapping(value = "/ucenter/refunds")
-    public String userRefunds(ModelMap modelMap){
-        modelMap.addAttribute("user", getUser());
+    public String userRefunds(ModelMap modelMap,HttpServletRequest request){
+        modelMap.addAttribute("user", getUser(request));
         return theme.getPcTemplate("user/refunds");
     }
 
@@ -480,8 +510,8 @@ public class UserController extends BaseController {
      * @return
      */
     @GetMapping(value = "/ucenter/complain")
-    public String userComplain(ModelMap modelMap){
-        modelMap.addAttribute("user", getUser());
+    public String userComplain(ModelMap modelMap,HttpServletRequest request){
+        modelMap.addAttribute("user", getUser(request));
         return theme.getPcTemplate("user/complain");
     }
 
@@ -491,8 +521,8 @@ public class UserController extends BaseController {
      * @return
      */
     @GetMapping(value = "/ucenter/favorite")
-    public String userFavorite(ModelMap modelMap){
-        modelMap.addAttribute("user", getUser());
+    public String userFavorite(ModelMap modelMap,HttpServletRequest request){
+        modelMap.addAttribute("user", getUser(request));
         return theme.getPcTemplate("user/favorite");
     }
 
@@ -503,8 +533,10 @@ public class UserController extends BaseController {
      * @return
      */
     @GetMapping(value = "/ucenter/invite")
-    public String userInvite(@RequestParam(value = "p", defaultValue = "1") int p,ModelMap modelMap){
-        modelMap.addAttribute("user", getUser());
+    public String userInvite(@RequestParam(value = "p", defaultValue = "1") int p,
+                             ModelMap modelMap,
+                             HttpServletRequest request){
+        modelMap.addAttribute("user", getUser(request));
         modelMap.addAttribute("p", p);
         return theme.getPcTemplate("user/invite");
     }
@@ -516,9 +548,11 @@ public class UserController extends BaseController {
      * @return
      */
     @GetMapping(value = "/ucenter/account_log")
-    public String userAccount_log(@RequestParam(value = "p", defaultValue = "1") int p,ModelMap modelMap){
+    public String userAccount_log(@RequestParam(value = "p", defaultValue = "1") int p,
+                                  ModelMap modelMap,
+                                  HttpServletRequest request){
         modelMap.addAttribute("p", p);
-        modelMap.addAttribute("user", getUser());
+        modelMap.addAttribute("user", getUser(request));
         return theme.getPcTemplate("user/account_log");
     }
 
@@ -528,8 +562,8 @@ public class UserController extends BaseController {
      * @return
      */
     @GetMapping(value = "/ucenter/withdraw")
-    public String userWithdraw(ModelMap modelMap){
-        modelMap.addAttribute("user", getUser());
+    public String userWithdraw(ModelMap modelMap,HttpServletRequest request){
+        modelMap.addAttribute("user", getUser(request));
         return theme.getPcTemplate("user/withdraw");
     }
 
@@ -539,8 +573,8 @@ public class UserController extends BaseController {
      * @return
      */
     @GetMapping(value = "/ucenter/online_recharge")
-    public String userOnlineRecharge(ModelMap modelMap){
-        modelMap.addAttribute("user", getUser());
+    public String userOnlineRecharge(ModelMap modelMap,HttpServletRequest request){
+        modelMap.addAttribute("user", getUser(request));
         return theme.getPcTemplate("user/online_recharge");
     }
 
@@ -550,8 +584,8 @@ public class UserController extends BaseController {
      * @return
      */
     @GetMapping(value = "/ucenter/address")
-    public String userAddress(ModelMap modelMap){
-        modelMap.addAttribute("user", getUser());
+    public String userAddress(ModelMap modelMap,HttpServletRequest request){
+        modelMap.addAttribute("user", getUser(request));
         return theme.getPcTemplate("user/address");
     }
 
@@ -561,8 +595,8 @@ public class UserController extends BaseController {
      * @return
      */
     @GetMapping(value = "/ucenter/info")
-    public String userInfo(ModelMap modelMap){
-        modelMap.addAttribute("user", getUser());
+    public String userInfo(ModelMap modelMap,HttpServletRequest request){
+        modelMap.addAttribute("user", getUser(request));
         return theme.getPcTemplate("user/info");
     }
 
@@ -572,8 +606,8 @@ public class UserController extends BaseController {
      * @return
      */
     @GetMapping(value = "/ucenter/password")
-    public String userPassword(ModelMap modelMap){
-        modelMap.addAttribute("user", getUser());
+    public String userPassword(ModelMap modelMap,HttpServletRequest request){
+        modelMap.addAttribute("user", getUser(request));
         return theme.getPcTemplate("user/password");
     }
 
@@ -583,32 +617,33 @@ public class UserController extends BaseController {
             @RequestParam(value = "old_password", required = false) String old_password,
             @RequestParam(value = "password", required = false) String password,
             @RequestParam(value = "password_confirmation", required = false) String password_confirmation,
-            @RequestParam(value = "captcha", required = false) String captcha) {
-        String kaptcha = (String) session.getAttribute("kaptcha");
-        DataVo data = DataVo.failure("操作失败");
+            @RequestParam(value = "captcha", required = false) String captcha,
+            HttpServletRequest request) {
+        String kaptcha = getObjString(session.getAttribute("kaptcha"));
+        DataVo data ;
         // 校验验证码
-        if (captcha == null && "".equals(captcha)) {
+        if (captcha == null || "".equals(captcha)) {
             return DataVo.failure("验证码不能为空");
         }
-        captcha=captcha.toLowerCase();
+        captcha = captcha.toLowerCase();
         if(!captcha.equals(kaptcha)){
             return DataVo.failure("验证码错误");
         }
         try {
             if (StringUtils.isBlank(old_password)) {
                 return DataVo.failure("原来密码不能为空");
-            } else if (old_password.length() < 6 && old_password.length() >= 32) {
+            } else if (old_password.length() < 6 || old_password.length() >= 32) {
                 return DataVo.failure("密码最少6个字符，最多32个字符");
             }
             if (StringUtils.isBlank(password)) {
                 return DataVo.failure("新密码不能为空");
-            } else if (password.length() < 6 && password.length() >= 32) {
+            } else if (password.length() < 6 || password.length() >= 32) {
                 return DataVo.failure("密码最少6个字符，最多32个字符");
             }
             if (!password.equals(password_confirmation)) {
                 return DataVo.failure("两次密码必须一样");
             }
-            data=userService.updatePassword(getUser().getUserId(), old_password, password);
+            data=userService.updatePassword(getUser(request).getUserId(), old_password, password);
             session.removeAttribute(Const.KAPTCHA_SESSION_KEY);
         } catch (Exception e) {
             data = DataVo.failure(e.getMessage());
@@ -626,12 +661,11 @@ public class UserController extends BaseController {
      */
     @ResponseBody
     @PostMapping("/ucenter/avatar.json")
-    public DataVo changeAvatar(String avatar) throws IOException, ParseException {
-        DataVo data = DataVo.failure("操作失败");
+    public DataVo changeAvatar(String avatar,HttpServletRequest request) throws IOException, ParseException {
+        DataVo data;
         if (StringUtils.isEmpty(avatar)) {
             return DataVo.failure("头像不能为空");
         }
-
         byte[] bytes;
         try {
             String _avatar = avatar.substring(avatar.indexOf(",") + 1, avatar.length());
@@ -642,7 +676,7 @@ public class UserController extends BaseController {
         }
         ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
         BufferedImage bufferedImage = ImageIO.read(bais);
-        data =imagesService.saveAvatarDataFile(getUser(), bufferedImage);
+        data =imagesService.saveAvatarDataFile(getUser(request), bufferedImage);
         bais.close();
         return data;
     }
@@ -654,19 +688,20 @@ public class UserController extends BaseController {
      */
     @ResponseBody
     @PostMapping(value = "/ucenter/user/follow")
-    public DataVo userFollow(@RequestParam(value = "id", required = false) String id) {
-        DataVo data = DataVo.failure("操作失败");
+    public DataVo userFollow(@RequestParam(value = "id", required = false) String id,
+                             HttpServletRequest request) {
+        DataVo data;
         try {
             if (!NumberUtils.isNumber(id)) {
-                return data=DataVo.failure("问题参数错误");
+                return DataVo.failure("问题参数错误");
             }
-            if(getUser()==null){
-                return data=DataVo.failure("请登陆后关注");
+            if(getUser(request)==null){
+                return DataVo.failure("请登陆后关注");
             }
-            if((getUser().getUserId().equals(Long.parseLong(id)))){
-                return data=DataVo.failure("无法关注自己！");
+            if((getUser(request).getUserId().equals(Long.parseLong(id)))){
+                return DataVo.failure("无法关注自己！");
             }
-            data=userService.addUserFans(Long.parseLong(id),getUser().getUserId());
+            data=userService.addUserFans(Long.parseLong(id),getUser(request).getUserId());
         } catch (Exception e) {
             data = DataVo.failure(e.getMessage());
         }
@@ -680,25 +715,28 @@ public class UserController extends BaseController {
      */
     @ResponseBody
     @GetMapping(value = "/user/status.json")
-    public void userSession() throws Exception {
-        PrintWriter out =null;
+    public void userSession(HttpServletRequest request,HttpServletResponse response) throws Exception {
+        PrintWriter out;
         response.setCharacterEncoding("utf-8");
         response.setHeader("Content-type", "text/html;charset=utf-8");
         response.setContentType("text/javascript;charset=utf-8");
         /*response.setHeader("Cache-Control", "no-cache");*/
         out = response.getWriter();
+        if(null == out){
+            return;
+        }
         //out.flush();//清空缓存
-        if(getUser()!=null){
-            out.println("var userid='"+getUser().getUserId()+"';");
-            out.println("var nickname = '"+getUser().getNickName()+"';");
+        if(getUser(request)!=null){
+            out.println("var userid='"+getUser(request).getUserId()+"';");
+            out.println("var nickname = '"+getUser(request).getNickName()+"';");
             String signature="";
-            if(getUser().getSignature()!=null){
-                signature=getUser().getSignature();
+            if(getUser(request).getSignature()!=null){
+                signature=getUser(request).getSignature();
             }else{
                 signature="这个家伙很懒，啥也没留下！";
             }
             out.println("var signature = '"+signature+"';");
-            String avatar=getUser().getAvatar();
+            String avatar=getUser(request).getAvatar();
             if(avatar==null){
                 avatar="/assets/skin/pc_theme/defalut/images/avatar/default.jpg";
             }
@@ -717,7 +755,7 @@ public class UserController extends BaseController {
      *
      */
     @GetMapping(value = "/logout")
-    public String logout() {
+    public String logout(HttpServletRequest request,HttpServletResponse response) {
         //清除cookie、session
         userService.signOutLogin(request,response);
         return "redirect:/index-hot";
@@ -728,9 +766,9 @@ public class UserController extends BaseController {
      *
      */
     @GetMapping(value = "/forget_password")
-    public String forgetPassword(ModelMap modelMap) {
-        if(getUser()!=null){
-            modelMap.addAttribute("user", getUser());
+    public String forgetPassword(ModelMap modelMap,HttpServletRequest request) {
+        if(getUser(request)!=null){
+            modelMap.addAttribute("user", getUser(request));
         }
         return theme.getPcTemplate("user/forget_password");
     }
@@ -740,9 +778,9 @@ public class UserController extends BaseController {
      *
      */
     @GetMapping(value = "/forget_password/mobile")
-    public String forgetPasswordMobile(ModelMap modelMap) {
-        if(getUser()!=null){
-            modelMap.addAttribute("user", getUser());
+    public String forgetPasswordMobile(ModelMap modelMap,HttpServletRequest request) {
+        if(getUser(request)!=null){
+            modelMap.addAttribute("user", getUser(request));
         }
         return theme.getPcTemplate("user/forget_password_mobile");
     }
@@ -759,17 +797,13 @@ public class UserController extends BaseController {
      */
     @ResponseBody
     @PostMapping(value = "/forget_password/getbackcode")
-    public DataVo getBackCode(@RequestParam(value = "username", required = false) String username,@RequestParam(value = "captcha", required = false) String captcha) throws Exception {
-        DataVo data = DataVo.failure("操作失败");
-        String kaptcha = (String) session.getAttribute("kaptcha");
+    public DataVo getBackCode(@RequestParam(value = "username", required = false) String username,
+                              @RequestParam(value = "captcha", required = false) String captcha) throws Exception {
+        DataVo data;
         // 校验验证码
-        if (captcha != null) {
-            if (!captcha.equalsIgnoreCase(kaptcha)) {
-                return DataVo.failure("验证码错误");
-            }
-            session.removeAttribute(Const.KAPTCHA_SESSION_KEY);
-        }else{
-            return DataVo.failure("验证码不能为空");
+        DataVo verifyDo = checkVerifyCode(captcha,getObjString(session.getAttribute("kaptcha")));
+        if(null != verifyDo){
+            return verifyDo;
         }
         if (StringUtils.isBlank(username)) {
             return DataVo.failure("手机号码不能为空");
@@ -786,9 +820,9 @@ public class UserController extends BaseController {
      *
      */
     @GetMapping(value = "/forget_password/email")
-    public String forgetPasswordEmail(ModelMap modelMap) {
-        if(getUser()!=null){
-            modelMap.addAttribute("user", getUser());
+    public String forgetPasswordEmail(ModelMap modelMap,HttpServletRequest request) {
+        if(getUser(request)!=null){
+            modelMap.addAttribute("user", getUser(request));
         }
         return theme.getPcTemplate("user/forget_password_email");
     }
@@ -804,14 +838,13 @@ public class UserController extends BaseController {
     @ResponseBody
     @PostMapping(value = "/forget_password/getbackemailcode")
     public DataVo getEmailBackCode(@RequestParam(value = "username", required = false) String username) throws Exception {
-        DataVo data = DataVo.failure("操作失败");
         if (StringUtils.isBlank(username)) {
             return DataVo.failure("手机号码不能为空");
         }
         if (!StringHelperUtils.emailFormat(username)) {
             return DataVo.failure("邮箱格式错误！");
         }
-        return data = userService.getEmailBackCode(username);
+        return userService.getEmailBackCode(username);
     }
 
     /**
@@ -831,8 +864,7 @@ public class UserController extends BaseController {
     public DataVo updateUserPassword(@RequestParam(value = "username", required = false) String username,
                                      @RequestParam(value = "code", required = false) String code,
                                      @RequestParam(value = "password", required = false) String password) throws Exception {
-        DataVo data = DataVo.failure("操作失败");
-        String kaptcha = (String) session.getAttribute("kaptcha");
+        DataVo data;
         if (StringUtils.isBlank(username)) {
             return DataVo.failure("用户名不能为空");
         }
@@ -841,7 +873,7 @@ public class UserController extends BaseController {
         }
         if (StringUtils.isBlank(password)) {
             return DataVo.failure("密码不能为空");
-        } else if (password.length() < 6 && password.length() > 30) {
+        } else if (password.length() < 6 || password.length() > 30) {
             return DataVo.failure("密码最少6个字符，最多30个字符");
         }
         data = userService.updateGetBackPassword(username,code,password);

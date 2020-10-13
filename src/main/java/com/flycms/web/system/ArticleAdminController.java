@@ -9,13 +9,14 @@ import com.flycms.module.article.service.ArticleService;
 import com.flycms.module.search.service.SolrService;
 import org.apache.commons.lang.math.NumberUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.ObjectError;
 import org.springframework.web.bind.annotation.*;
 
+import javax.annotation.Resource;
+import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -23,38 +24,48 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 开发公司：28844.com<br/>
- * 版权：28844.com<br/>
  *
- * @author sun-kaifei
- * @version 1.0 <br/>
- * @email 79678111@qq.com
- * @Date: 10:57 2018/7/13
+ * @author aa
+ * @date 2020/10/11
  */
 @Controller
 @RequestMapping("/system/article")
 public class ArticleAdminController extends BaseController {
-    @Autowired
+    @Resource
     protected ArticleService articleService;
-    @Autowired
+    @Resource
     protected ArticleCategoryService articleCategoryService;
-    @Autowired
+    @Resource
     private SolrService solrService;
 
-    //文章列表
+    /**
+     * 文章列表
+     * @param title
+     * @param userId
+     * @param createTime
+     * @param status
+     * @param p
+     * @param modelMap
+     * @return
+     */
     @GetMapping(value = "/article_list")
     public String getArticleList(@RequestParam(value = "title", required = false) String title,
                                  @RequestParam(value = "userId", required = false) String userId,
                                  @RequestParam(value = "createTime", required = false) String createTime,
                                  @RequestParam(value = "status", required = false) String status,
                                  @RequestParam(value = "p", defaultValue = "1") int p,
-                                 ModelMap modelMap){
+                                 ModelMap modelMap, HttpServletRequest request){
         modelMap.addAttribute("p", p);
-        modelMap.addAttribute("admin", getAdminUser());
+        modelMap.addAttribute("admin", getAdminUser(request));
         return theme.getAdminTemplate("content/list_article");
     }
 
-    //查询单条文章数据信息
+    /**
+     * 查询单条文章数据信息
+     * @param id
+     * @param modelMap
+     * @return
+     */
     @ResponseBody
     @GetMapping(value = "/findId")
     public DataVo getFindArticleId(@RequestParam(value = "id", required = false) String id, ModelMap modelMap) {
@@ -75,40 +86,56 @@ public class ArticleAdminController extends BaseController {
         return data;
     }
 
-    //文章审核操作
+    /**
+     * 文章审核操作
+     * @param id
+     * @param status
+     * @param recommend
+     * @return
+     * @throws Exception
+     */
     @PostMapping("/article-status")
     @ResponseBody
     public DataVo updateArticleStatusById(@RequestParam(value = "id", required = false) String id,
                                           @RequestParam(value = "status", required = false) String status,
                                           @RequestParam(value = "recommend", defaultValue = "0") String recommend) throws Exception{
-        DataVo data = DataVo.failure("操作失败");
+        DataVo data;
         if (!NumberUtils.isNumber(id)) {
-            return data = DataVo.failure("id参数错误");
+            return DataVo.failure("id参数错误");
         }
         if (!NumberUtils.isNumber(status)) {
-            return data = DataVo.failure("审核状态参数错误");
+            return DataVo.failure("审核状态参数错误");
         }
         if (!StringUtils.isBlank(recommend)) {
             if (!NumberUtils.isNumber(recommend)) {
-                return data = DataVo.failure("推荐参数错误");
+                return DataVo.failure("推荐参数错误");
             }
         }
         data = articleService.updateArticleStatusById(Long.parseLong(id),Integer.valueOf(status),Integer.valueOf(recommend));
         return data;
     }
 
-    //添加文章
+    /**
+     * 添加文章
+     * @param modelMap
+     * @return
+     */
     @GetMapping(value = "/article_add")
-    public String getAddArticle(ModelMap modelMap){
-        modelMap.addAttribute("admin", getAdminUser());
+    public String getAddArticle(ModelMap modelMap,HttpServletRequest request){
+        modelMap.addAttribute("admin", getAdminUser(request));
         return theme.getAdminTemplate("content/add_article");
     }
 
-    //保存添加文章
+    /**
+     * 保存添加文章
+     * @param article
+     * @param result
+     * @return
+     */
     @PostMapping("/article_save")
     @ResponseBody
     public DataVo addAdminSave(@Valid Article article, BindingResult result){
-        DataVo data = DataVo.failure("操作失败");
+        DataVo data;
         try {
             if (result.hasErrors()) {
                 List<ObjectError> list = result.getAllErrors();
@@ -124,26 +151,40 @@ public class ArticleAdminController extends BaseController {
         return data;
     }
 
-    //文章
+    /**
+     * 文章
+     * @param id
+     * @return
+     */
     @PostMapping("/del")
     @ResponseBody
     public DataVo deleteArticleById(@RequestParam(value = "id") Long id){
-        DataVo data = DataVo.failure("操作失败");
-        data = articleService.deleteArticleById(id);
+        DataVo data = articleService.deleteArticleById(id);
         return data;
     }
 
-    //文章列表
+    /**
+     * 文章列表
+     * @param title
+     * @param createTime
+     * @param pageNum
+     * @param modelMap
+     * @return
+     */
     @GetMapping(value = "/category_list")
     public String getCategoryList(@RequestParam(value = "title", required = false) String title,
                                  @RequestParam(value = "createTime", required = false) String createTime,
                                  @RequestParam(value = "p", defaultValue = "1") int pageNum,
-                                 ModelMap modelMap){
-        modelMap.addAttribute("admin", getAdminUser());
+                                 ModelMap modelMap,HttpServletRequest request){
+        modelMap.addAttribute("admin", getAdminUser(request));
         return theme.getAdminTemplate("content/list_article_category");
     }
 
-    //按父级id查询id下所有地区列表
+    /**
+     * 按父级id查询id下所有地区列表
+     * @param parentId
+     * @return
+     */
     @ResponseBody
     @RequestMapping(value = "/category_child")
     public List<ArticleCategory> getCategoryChild(@RequestParam(value = "parentId", defaultValue = "0") Long parentId){
@@ -151,7 +192,10 @@ public class ArticleAdminController extends BaseController {
         return list;
     }
 
-    //按父级id查询id下所有地区列表
+    /**
+     * 按父级id查询id下所有地区列表
+     * @return
+     */
     @ResponseBody
     @RequestMapping(value = "/categorytree")
     public List<Map<String, Object>> getCategoryAllList(){
@@ -168,24 +212,34 @@ public class ArticleAdminController extends BaseController {
         return list;
     }
 
-    //添加文章分类
+    /**
+     * 添加文章分类
+     * @param modelMap
+     * @return
+     */
     @GetMapping(value = "/category_add")
-    public String getAddCategory(ModelMap modelMap){
-        modelMap.addAttribute("admin", getAdminUser());
+    public String getAddCategory(ModelMap modelMap,HttpServletRequest request){
+        modelMap.addAttribute("admin", getAdminUser(request));
         return theme.getAdminTemplate("content/add_article_category");
     }
 
-    //保存添加文章分类
+    /**
+     * 保存添加文章分类
+     * @param pid
+     * @param name
+     * @return
+     */
     @PostMapping("/category_save")
     @ResponseBody
-    public DataVo AddCategory(@RequestParam(value = "pid", required = false) String pid,@RequestParam(value = "name", required = false) String name){
-        DataVo data = DataVo.failure("操作失败");
+    public DataVo AddCategory(@RequestParam(value = "pid", required = false) String pid,
+                              @RequestParam(value = "name", required = false) String name){
+        DataVo data;
         try {
             if (StringUtils.isBlank(pid)) {
-                return data = DataVo.failure("父级分类id不能为空");
+                return DataVo.failure("父级分类id不能为空");
             }
             if (!NumberUtils.isNumber(pid)) {
-                data = DataVo.failure("父级分类id错误！");
+                return DataVo.failure("父级分类id错误！");
             }
             if (StringUtils.isBlank(name)) {
                 return DataVo.failure("分类名称不能为空");
@@ -197,17 +251,23 @@ public class ArticleAdminController extends BaseController {
         return data;
     }
 
-    //编辑文章分类名称
+    /**
+     * 编辑文章分类名称
+     * @param id
+     * @param name
+     * @return
+     */
     @PostMapping("/category_edit")
     @ResponseBody
-    public DataVo editCategory(@RequestParam(value = "id", required = false) String id,@RequestParam(value = "name", required = false) String name){
-        DataVo data = DataVo.failure("操作失败");
+    public DataVo editCategory(@RequestParam(value = "id", required = false) String id,
+                               @RequestParam(value = "name", required = false) String name){
+        DataVo data;
         try {
             if (StringUtils.isBlank(id)) {
-                return data = DataVo.failure("分类id不能为空");
+                return DataVo.failure("分类id不能为空");
             }
             if (!NumberUtils.isNumber(id)) {
-                data = DataVo.failure("分类id错误！");
+                return DataVo.failure("分类id错误！");
             }
             if (StringUtils.isBlank(name)) {
                 return DataVo.failure("分类名称不能为空");
@@ -219,23 +279,29 @@ public class ArticleAdminController extends BaseController {
         return data;
     }
 
-    //编辑文章分类名称
+    /**
+     * 编辑文章分类名称
+     * @param id
+     * @param pId
+     * @return
+     */
     @PostMapping("/category_drags")
     @ResponseBody
-    public DataVo editCategoryDrags(@RequestParam(value = "id", required = false) String id,@RequestParam(value = "pId", required = false) String pId){
-        DataVo data = DataVo.failure("操作失败");
+    public DataVo editCategoryDrags(@RequestParam(value = "id", required = false) String id,
+                                    @RequestParam(value = "pId", required = false) String pId){
+        DataVo data;
         try {
             if (StringUtils.isBlank(id)) {
-                return data = DataVo.failure("分类id不能为空");
+                return DataVo.failure("分类id不能为空");
             }
             if (!NumberUtils.isNumber(id)) {
-                data = DataVo.failure("分类id错误！");
+                return DataVo.failure("分类id错误！");
             }
             if (StringUtils.isBlank(pId)) {
                 return DataVo.failure("未获取到父级id");
             }
             if (!NumberUtils.isNumber(pId)) {
-                data = DataVo.failure("父级id错误！");
+                return DataVo.failure("父级id错误！");
             }
             data = articleCategoryService.editCategoryDragsById(Long.parseLong(id),Long.parseLong(pId));
         } catch (Exception e) {
@@ -244,17 +310,21 @@ public class ArticleAdminController extends BaseController {
         return data;
     }
 
-    //删除文章分类
+    /**
+     * 删除文章分类
+     * @param id
+     * @return
+     */
     @PostMapping("/category_delete")
     @ResponseBody
     public DataVo deleteArticleCategoryById(@RequestParam(value = "id", required = false) String id){
-        DataVo data = DataVo.failure("操作失败");
+        DataVo data;
         try {
             if (StringUtils.isBlank(id)) {
-                return data = DataVo.failure("分类id不能为空");
+                return DataVo.failure("分类id不能为空");
             }
             if (!NumberUtils.isNumber(id)) {
-                data = DataVo.failure("分类id错误！");
+                return DataVo.failure("分类id错误！");
             }
             data = articleCategoryService.deleteArticleCategoryById(Long.parseLong(id));
         } catch (Exception e) {
@@ -266,7 +336,7 @@ public class ArticleAdminController extends BaseController {
     @ResponseBody
     @RequestMapping(value = "/index_all_article")
     public DataVo indexAllArticle() {
-        DataVo data = DataVo.failure("操作失败");
+        DataVo data;
         try {
             solrService.indexAllArticle();
             data=DataVo.success("全部索引成功！");

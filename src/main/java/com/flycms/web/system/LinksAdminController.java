@@ -7,6 +7,7 @@
 
 package com.flycms.web.system;
 
+import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
 
@@ -17,7 +18,6 @@ import com.flycms.module.links.model.Links;
 import com.flycms.module.links.service.LinksService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.math.NumberUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
 import org.springframework.validation.BindingResult;
@@ -42,19 +42,19 @@ import java.util.List;
 @Controller
 @RequestMapping("/system/links")
 public class LinksAdminController extends BaseController {
-	@Autowired
+	@Resource
 	protected LinksService linksService;
 
 	@GetMapping(value = "/add")
 	public String index(HttpServletRequest request,ModelMap modelMap) throws Exception {
-        modelMap.addAttribute("admin", getAdminUser());
+        modelMap.addAttribute("admin", getAdminUser(request));
         return theme.getAdminTemplate("links/add_links");
 	}
 	
 	@ResponseBody
 	@PostMapping(value = "/add_link")
 	public DataVo addFriendLink(@Valid Links links, BindingResult result) {
-		DataVo data = DataVo.failure("操作失败");
+		DataVo data;
         try {
             if (result.hasErrors()) {
                 List<ObjectError> list = result.getAllErrors();
@@ -75,46 +75,46 @@ public class LinksAdminController extends BaseController {
 
 	
 	@GetMapping(value = "/list")
-	public String FriendLinkList(HttpServletRequest request,
-			@RequestParam(value = "linkType", defaultValue = "0") int linkType,
-			@RequestParam(value = "show", defaultValue = "0") int show,
-			@RequestParam(value = "p", defaultValue = "1") int pageNum,
-			ModelMap modelMap) throws Exception {		
+	public String friendLinkList(@RequestParam(value = "linkType", defaultValue = "0") int linkType,
+								 @RequestParam(value = "show", defaultValue = "0") int show,
+								 @RequestParam(value = "p", defaultValue = "1") int pageNum,
+								 ModelMap modelMap,
+								 HttpServletRequest request) throws Exception {
 		PageVo<Links> pageVo = linksService.getLinksListPage(linkType,show ,pageNum,20);
 		modelMap.put("pageVo", pageVo);
 		modelMap.put("p", pageNum);
-        modelMap.addAttribute("admin", getAdminUser());
+        modelMap.addAttribute("admin", getAdminUser(request));
 		return theme.getAdminTemplate("links/list_links");
 	}
 
 	@ResponseBody
 	@PostMapping(value = "/delete_link")
 	public DataVo deleteLinks(@RequestParam(value = "id") Integer id) throws  Exception {
-		DataVo data = DataVo.failure("操作失败");
+		DataVo data;
 		try {
             Links friendLink = linksService.findLinksById(id);
 			if (friendLink != null) {
                 linksService.deleteLinksById(id);
-				return DataVo.success("操作成功", DataVo.NOOP);
+				data = DataVo.success("操作成功", DataVo.NOOP);
 			} else {
-				DataVo.failure("您提交的友情链接信息不存在！");
+				data = DataVo.failure("您提交的友情链接信息不存在！");
 			}
-			
 		} catch (Exception e) {
 			log.error(e.getMessage(), e);
-			DataVo.failure("未知错误！");
+			data = DataVo.failure("未知错误！");
 		}
 		return data;
 	}
 	
 	@GetMapping(value = "/update/{id}")
-	public String UpdateFriendLink(@PathVariable(value = "id", required = false) Integer id,ModelMap modelMap) throws Exception {
+	public String updateFriendLink(@PathVariable(value = "id", required = false) Integer id,
+								   ModelMap modelMap,HttpServletRequest request) throws Exception {
         Links link = linksService.findLinksById(id);
 		if(link==null){
             return theme.getPcTemplate("404");
 		}
 		modelMap.put("link",link);
-        modelMap.addAttribute("admin", getAdminUser());
+        modelMap.addAttribute("admin", getAdminUser(request));
         return theme.getAdminTemplate("links/update_links");
 	}
 	
@@ -128,7 +128,7 @@ public class LinksAdminController extends BaseController {
                 for (ObjectError error : list) {
                     return DataVo.failure(error.getDefaultMessage());
                 }
-                return null;
+                return data;
             }
             if (!NumberUtils.isNumber(links.getId().toString())) {
                 return DataVo.failure("友情链接ID参数错误！");

@@ -441,7 +441,22 @@ public interface UserDao {
                             @Param("area") Integer area,
                             @Param("status") Integer status);
 
-    //查询热门用户组列表
+    /**
+     * 查询热门用户组列表
+     * @param userName
+     * @param nickName
+     * @param userMobile
+     * @param userEmail
+     * @param province
+     * @param city
+     * @param area
+     * @param status
+     * @param orderby
+     * @param order
+     * @param offset
+     * @param rows
+     * @return
+     */
     public List<User> getUserHotList(@Param("userName") String userName,
                                   @Param("nickName") String nickName,
                                   @Param("userMobile") String userMobile,
@@ -462,7 +477,7 @@ public interface UserDao {
      *         用户seeeionKey
      * @return
      */
-    public UserSession findUserSessionBySeeeionKey(@Param("sessionKey") String sessionKey);
+    public UserSession findUserSessionBySessionKey(@Param("sessionKey") String sessionKey);
 
 
     /**

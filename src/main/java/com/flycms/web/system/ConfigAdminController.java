@@ -12,54 +12,51 @@ import com.flycms.module.config.service.SmsapiService;
 import com.flycms.module.config.service.ConfigService;
 import com.flycms.module.other.model.FilterKeyword;
 import com.flycms.module.other.service.FilterKeywordService;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.math.NumberUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.log4j.Logger;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.ObjectError;
 import org.springframework.web.bind.annotation.*;
 
+import javax.annotation.Resource;
+import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 /**
- * 开发公司：28844.com<br/>
- * 版权：28844.com<br/>
  *
- * @author sun-kaifei
- * @version 1.0 <br/>
- * @email 79678111@qq.com
- * @Date: 2018-06-30
+ * @author aa
+ * @date 2020/10/11
  */
+@Slf4j
 @Controller
 @RequestMapping("/system/site")
 public class ConfigAdminController extends BaseController {
-    protected final static Logger logger = Logger.getLogger(ConfigAdminController.class);
-    @Autowired
+    @Resource
     protected ConfigService configService;
-    @Autowired
+    @Resource
     protected GlobalTagService globalTagService;
-    @Autowired
+    @Resource
     protected AreasService areasService;
-    @Autowired
+    @Resource
     protected SmsapiService smsapiService;
-    @Autowired
+    @Resource
     protected FilterKeywordService filterKeywordService;
 
     @GetMapping(value = "/web_config")
-    public String basic(ModelMap modelMap){
-        Map<String,String> map=new HashMap<String,String>();
+    public String basic(ModelMap modelMap, HttpServletRequest request){
+        Map<String,String> map=new HashMap<String,String>(16);
         List<Config> configList=configService.getConfigAllList();
         for (Config List : configList) {
             map.put(List.getKeycode(), List.getKeyvalue());
         }
         modelMap.addAttribute("config",map);
-        modelMap.addAttribute("admin", getAdminUser());
+        modelMap.addAttribute("admin", getAdminUser(request));
         return theme.getAdminTemplate("webconfig/web_config");
     }
 
@@ -95,112 +92,125 @@ public class ConfigAdminController extends BaseController {
             globalTagService.setSharedVariable();
             return DataVo.success("操作成功", DataVo.NOOP);
         } catch (Exception e) {
-            logger.error(e.getMessage(), e);
+            log.error(e.getMessage(), e);
             DataVo.failure("未知错误！");
         }
         return data;
     }
 
-    //网站底部信息
+    /**
+     * 网站底部信息
+     * @param flyFooterCode
+     * @return
+     */
     @ResponseBody
     @PostMapping(value = "/config_footer_updagte")
     public DataVo basicSubmit(
-            @RequestParam(value = "fly_footer_code") String fly_footer_code) {
-        DataVo data = DataVo.failure("操作失败");
+            @RequestParam(value = "fly_footer_code") String flyFooterCode) {
+        DataVo data;
         try {
-            if (StringUtils.isBlank(fly_footer_code)) {
+            if (StringUtils.isBlank(flyFooterCode)) {
                 return DataVo.failure("网站名称不能为空！");
             }
-
-            configService.updateConfigByKey("fly_footer_code", fly_footer_code);
+            configService.updateConfigByKey("fly_footer_code", flyFooterCode);
             //更新前台标签
             globalTagService.setSharedVariable();
-            return DataVo.success("操作成功", DataVo.NOOP);
+            data = DataVo.success("操作成功", DataVo.NOOP);
         } catch (Exception e) {
-            logger.error(e.getMessage(), e);
-            DataVo.failure("未知错误！");
+            log.error(e.getMessage(), e);
+            data = DataVo.failure("未知错误！");
         }
         return data;
     }
 
     @GetMapping(value = "/area_list")
-    public String getAreaList(@RequestParam(value = "parentId", defaultValue = "0") int parentId,ModelMap modelMap){
+    public String getAreaList(@RequestParam(value = "parentId", defaultValue = "0") int parentId,
+                              ModelMap modelMap, HttpServletRequest request){
         List<Areas> areas=areasService.selectAreasByPid(parentId);
         modelMap.addAttribute("areas",areas);
-        modelMap.addAttribute("admin", getAdminUser());
+        modelMap.addAttribute("admin", getAdminUser(request));
         return theme.getAdminTemplate("webconfig/area_list");
     }
 
     @GetMapping(value = "/user_config")
-    public String userConfig(ModelMap modelMap){
-        Map<String,String> map=new HashMap<String,String>();
+    public String userConfig(ModelMap modelMap, HttpServletRequest request){
+        Map<String,String> map=new HashMap<>(8);
         List<Config> configList=configService.getConfigAllList();
-        for (Config List : configList) {
-            map.put(List.getKeycode(), List.getKeyvalue());
+        for (Config list : configList) {
+            map.put(list.getKeycode(), list.getKeyvalue());
         }
         modelMap.addAttribute("config",map);
-        modelMap.addAttribute("admin", getAdminUser());
+        modelMap.addAttribute("admin", getAdminUser(request));
         return theme.getAdminTemplate("webconfig/user_config");
     }
 
-    /**u
+    /**
      * 修改用户信息设置配置
      */
     @ResponseBody
     @PostMapping(value = "/userconfig_updagte")
-    public DataVo updagteUserConfig(
-            @RequestParam(value = "user_reg") String user_reg,
-            @RequestParam(value = "user_reg_verify") String user_reg_verify,
-            @RequestParam(value = "user_activation_role") String user_activation_role,
-            @RequestParam(value = "user_role") String user_role,
-            @RequestParam(value = "user_question_verify") String user_question_verify,
-            @RequestParam(value = "user_answer_verify") String user_answer_verify
+    public DataVo updateUserConfig(
+            @RequestParam(value = "user_reg") String userReg,
+            @RequestParam(value = "user_reg_verify") String userRegVerify,
+            @RequestParam(value = "user_activation_role") String userActivationRole,
+            @RequestParam(value = "user_role") String userRole,
+            @RequestParam(value = "user_question_verify") String userQuestionVerify,
+            @RequestParam(value = "user_answer_verify") String userAnswerVerify
     ) {
-        DataVo data = DataVo.failure("操作失败");
+        DataVo data;
         try {
-            if (!NumberUtils.isNumber(user_role)) {
-                return data=DataVo.failure("权限参数错误");
+            if (!NumberUtils.isNumber(userRole)) {
+                return DataVo.failure("权限参数错误");
             }
-            if (!NumberUtils.isNumber(user_question_verify)) {
-                return data=DataVo.failure("问答审核参数错误");
+            if (!NumberUtils.isNumber(userQuestionVerify)) {
+                return DataVo.failure("问答审核参数错误");
             }
-            if (!NumberUtils.isNumber(user_answer_verify)) {
-                return data=DataVo.failure("回答审核参数错误");
+            if (!NumberUtils.isNumber(userAnswerVerify)) {
+                return DataVo.failure("回答审核参数错误");
             }
-            configService.updateConfigByKey("user_reg", user_reg);
-            configService.updateConfigByKey("user_reg_verify", user_reg_verify);
-            configService.updateConfigByKey("user_activation_role", user_activation_role);
-            configService.updateConfigByKey("user_role", user_role);
-            configService.updateConfigByKey("user_question_verify", user_question_verify);
-            configService.updateConfigByKey("user_answer_verify", user_answer_verify);
-            return DataVo.success("操作成功", DataVo.NOOP);
+            configService.updateConfigByKey("user_reg", userReg);
+            configService.updateConfigByKey("user_reg_verify", userRegVerify);
+            configService.updateConfigByKey("user_activation_role", userActivationRole);
+            configService.updateConfigByKey("user_role", userRole);
+            configService.updateConfigByKey("user_question_verify", userQuestionVerify);
+            configService.updateConfigByKey("user_answer_verify", userAnswerVerify);
+            data = DataVo.success("操作成功", DataVo.NOOP);
         } catch (Exception e) {
-            logger.error(e.getMessage(), e);
-            DataVo.failure("未知错误！");
+            log.error(e.getMessage(), e);
+            data = DataVo.failure("未知错误！");
         }
         return data;
     }
 
     @GetMapping(value = "/conf_guide")
-    public String getAddGuide(ModelMap modelMap){
-        modelMap.addAttribute("admin", getAdminUser());
+    public String getAddGuide(ModelMap modelMap, HttpServletRequest request){
+        modelMap.addAttribute("admin", getAdminUser(request));
         return theme.getAdminTemplate("webconfig/conf_guide");
     }
 
-    //短信接口更新
+    /**
+     * 短信接口更新
+     * @param modelMap
+     * @return
+     */
     @GetMapping(value = "/smsapi_edit")
-    public String updateSmsapi(ModelMap modelMap){
+    public String updateSmsapi(ModelMap modelMap,HttpServletRequest request){
         Smsapi sms=smsapiService.findSmsapiByid(1);
         modelMap.addAttribute("sms", sms);
-        modelMap.addAttribute("admin", getAdminUser());
+        modelMap.addAttribute("admin", getAdminUser(request));
         return theme.getAdminTemplate("webconfig/smsapi_edit");
     }
 
-    //处理短信接口信息
+    /**
+     * 处理短信接口信息
+     * @param smsapi
+     * @param result
+     * @return
+     */
     @PostMapping("/smsapi_update")
     @ResponseBody
     public DataVo updateSmsapi(@Valid Smsapi smsapi, BindingResult result){
-        DataVo data = DataVo.failure("操作失败");
+        DataVo data;
         try {
             if (result.hasErrors()) {
                 List<ObjectError> list = result.getAllErrors();
@@ -216,21 +226,29 @@ public class ConfigAdminController extends BaseController {
         return data;
     }
 
-    //添加违禁关键词
+    /**
+     * 添加违禁关键词
+     * @param modelMap
+     * @return
+     */
     @GetMapping(value = "/add_filterKeyword")
-    public String addFilterKeyword(ModelMap modelMap){
-        modelMap.addAttribute("admin", getAdminUser());
+    public String addFilterKeyword(ModelMap modelMap, HttpServletRequest request){
+        modelMap.addAttribute("admin", getAdminUser(request));
         return theme.getAdminTemplate("webconfig/add_filterKeyword");
     }
 
-    //保存添加违禁关键词
+    /**
+     * 保存添加违禁关键词
+     * @param keyword
+     * @return
+     */
     @ResponseBody
     @PostMapping(value = "/filterKeyword_save")
     public DataVo saveFilterKeyword(@RequestParam(value = "keyword", required = false) String keyword) {
-        DataVo data = DataVo.failure("操作失败");
+        DataVo data;
         try {
             if (StringUtils.isBlank(keyword)) {
-                return data=DataVo.failure("关键词不能为空");
+                return DataVo.failure("关键词不能为空");
             }
             keyword=keyword.trim();
             data = filterKeywordService.addFilterKeyword(keyword);
@@ -240,18 +258,31 @@ public class ConfigAdminController extends BaseController {
         return data;
     }
 
-    //违禁关键词列表
+    /**
+     * 违禁关键词列表
+     * @param p
+     * @param modelMap
+     * @return
+     */
     @GetMapping(value = "/filterKeyword_list")
-    public String filterKeywordList( @RequestParam(value = "p", defaultValue = "1") int p,ModelMap modelMap){
+    public String filterKeywordList( @RequestParam(value = "p", defaultValue = "1") int p,
+                                     ModelMap modelMap,HttpServletRequest request){
         PageVo<FilterKeyword> pageVo=filterKeywordService.getFilterKeywordListPage(p,20);
         modelMap.addAttribute("pageVo", pageVo);
-        modelMap.addAttribute("admin", getAdminUser());
+        modelMap.addAttribute("admin", getAdminUser(request));
         return theme.getAdminTemplate("webconfig/list_filterKeyword");
     }
 
-    //修改违禁关键词
+    /**
+     * 修改违禁关键词
+     * @param id
+     * @param modelMap
+     * @param request
+     * @return
+     */
     @GetMapping(value = "/edit_filterKeyword/{id}")
-    public String updateFilterKeyword(@PathVariable(value = "id", required = false) String id,ModelMap modelMap){
+    public String updateFilterKeyword(@PathVariable(value = "id", required = false) String id,
+                                      ModelMap modelMap, HttpServletRequest request){
         if (!NumberUtils.isNumber(id)) {
             return theme.getPcTemplate("404");
         }
@@ -260,7 +291,7 @@ public class ConfigAdminController extends BaseController {
             return theme.getPcTemplate("404");
         }
         modelMap.addAttribute("keyword", keyword);
-        modelMap.addAttribute("admin", getAdminUser());
+        modelMap.addAttribute("admin", getAdminUser(request));
         return theme.getAdminTemplate("webconfig/edit_filterKeyword");
     }
 
@@ -271,17 +302,18 @@ public class ConfigAdminController extends BaseController {
      */
     @ResponseBody
     @PostMapping(value = "/update_filterKeyword")
-    public DataVo updateStatus(@RequestParam(value = "id", required = false) String id,@RequestParam(value = "keyword", required = false) String keyword){
-        DataVo data = DataVo.failure("操作失败");
+    public DataVo updateStatus(@RequestParam(value = "id", required = false) String id,
+                               @RequestParam(value = "keyword", required = false) String keyword){
+        DataVo data;
         if (!NumberUtils.isNumber(id)) {
-            return data = DataVo.failure("id参数错误！");
+            return DataVo.failure("id参数错误！");
         }
         if (StringUtils.isBlank(keyword)) {
-            return data=DataVo.failure("关键词不能为空");
+            return DataVo.failure("关键词不能为空");
         }
         FilterKeyword filterKeyword = filterKeywordService.findFilterKeywordById(Long.parseLong(id));
         if(filterKeyword==null){
-            return data = DataVo.failure("该条信息不存在");
+            return DataVo.failure("该条信息不存在");
         }
         data = filterKeywordService.updateFilterKeywordById(keyword,Long.parseLong(id));
         return data;
@@ -295,13 +327,13 @@ public class ConfigAdminController extends BaseController {
     @ResponseBody
     @PostMapping(value = "/delete-filter-keyword")
     public DataVo deleteFilterKeywordById(@RequestParam(value = "id", required = false) String id) {
-        DataVo data = DataVo.failure("操作失败");
+        DataVo data;
         if (!NumberUtils.isNumber(id)) {
-            return data = DataVo.failure("id错误失败");
+            return DataVo.failure("id错误失败");
         }
         FilterKeyword keyword = filterKeywordService.findFilterKeywordById(Long.parseLong(id));
         if(keyword==null){
-            return data = DataVo.failure("该违禁关键词不存在");
+            return DataVo.failure("该违禁关键词不存在");
         }
         data = filterKeywordService.deleteFilterKeywordById(Long.parseLong(id));
         return data;
