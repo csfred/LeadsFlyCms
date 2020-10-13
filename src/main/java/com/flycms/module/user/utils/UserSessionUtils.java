@@ -8,9 +8,9 @@ import com.flycms.module.user.model.UserSession;
 import com.flycms.module.user.service.UserService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import javax.annotation.Resource;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -19,23 +19,10 @@ import java.util.Date;
 
 /**
  *
- * Open source house, All rights reserved
- * 开发公司：28844.com<br/>
- * 版权：开源中国<br/>
- * <p>
  * 
  * 用户登录信息操作
  * 
- * <p>
- * 
- * 区分　责任人　日期　　　　说明<br/>
- * 创建　孙开飞　2017年5月25日 　<br/>
- * <p>
- * *******
- * <p>
- * 
- * @author sun-kaifei
- * @email admin@97560.com
+ * @author aa
  * @version 1.0 <br/>
  * 
  */
@@ -43,9 +30,9 @@ import java.util.Date;
 @Service
 public class UserSessionUtils {
 
-    @Autowired
+    @Resource
     private UserService userService;
-    @Autowired
+    @Resource
     private SiteConst siteConst;
 
     /**

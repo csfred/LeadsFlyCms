@@ -207,7 +207,7 @@ define(function(require, exports, module) {
     $("#register-btn").keydown(function(e){
         var e = e || event,
             keycode = e.which || e.keyCode;
-        if (keycode==13) {
+        if (keycode===13) {
             $("#mobileregister-btn").trigger("click");
         }
     });

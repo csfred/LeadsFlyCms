@@ -10,20 +10,20 @@ import com.flycms.module.question.service.AnswerService;
 import com.flycms.module.question.service.QuestionService;
 import org.apache.commons.lang.math.NumberUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
 import org.springframework.web.bind.annotation.*;
 
+import javax.annotation.Resource;
 import java.util.HashMap;
 import java.util.Map;
 
 @Controller
 public class QuestionController extends BaseController {
-    @Autowired
+    @Resource
     private QuestionService questionService;
 
-    @Autowired
+    @Resource
     private AnswerService answerService;
 
     /**
@@ -38,7 +38,13 @@ public class QuestionController extends BaseController {
         return theme.getPcTemplate("question/index");
     }
 
-    //问答详细页面
+    /**
+     * 问答详细页面
+     * @param shortUrl
+     * @param p
+     * @param modelMap
+     * @return
+     */
     @GetMapping(value = "/q/{shortUrl}")
     public String question(@PathVariable(value = "shortUrl", required = false) String shortUrl,@RequestParam(value = "p", defaultValue = "1") int p,ModelMap modelMap){
         if (StringUtils.isBlank(shortUrl)) {
@@ -64,7 +70,12 @@ public class QuestionController extends BaseController {
         return theme.getPcTemplate("question/detail");
     }
 
-    //问答详细页面
+    /**
+     * 问答详细页面
+     * @param id
+     * @param modelMap
+     * @return
+     */
     @ResponseBody
     @RequestMapping(value = "/findQuestionById/{id}")
     public DataVo findQuestionById(@PathVariable(value = "id", required = false) String id,ModelMap modelMap){
@@ -88,7 +99,11 @@ public class QuestionController extends BaseController {
         return DataVo.success(map);
     }
 
-    //发布问题
+    /**
+     * 发布问题
+     * @param modelMap
+     * @return
+     */
     @GetMapping(value = "/question/add")
     public String addQuestion(ModelMap modelMap){
         if (getUser() != null) {
@@ -124,7 +139,12 @@ public class QuestionController extends BaseController {
         return data;
     }
 
-    //编辑问题
+    /**
+     * 编辑问题
+     * @param id
+     * @param modelMap
+     * @return
+     */
     @GetMapping(value = "/ucenter/question/edit")
     public String editQuestion(@PathVariable(value = "id", required = false) String id,ModelMap modelMap){
         if (!NumberUtils.isNumber(id)) {
@@ -153,7 +173,7 @@ public class QuestionController extends BaseController {
             if(question==null){
                 return data=DataVo.failure("该话题不存在或已删除");
             }
-            //content=StringHelperUtil.htmlReplace(content);
+            //content=StringHelperUtil.htmlReplace(content)
             if (StringUtils.isBlank(content)) {
                 return DataVo.failure("答案内容不能为空");
             }
@@ -164,7 +184,12 @@ public class QuestionController extends BaseController {
         return data;
     }
 
-    //编辑问题
+    /**
+     * 编辑问题
+     * @param id
+     * @param modelMap
+     * @return
+     */
     @GetMapping(value = "/ucenter/answer/edit-{id}")
     public String editAnswer(@PathVariable(value = "id", required = false) String id,ModelMap modelMap){
         if (!NumberUtils.isNumber(id)) {
@@ -203,7 +228,11 @@ public class QuestionController extends BaseController {
         return data;
     }
 
-    //处理关注信息
+    /**
+     * 处理关注信息
+     * @param questionId
+     * @return
+     */
     @ResponseBody
     @PostMapping(value = "/question/follow")
     public DataVo questionFollow(@RequestParam(value = "questionId", required = false) String questionId) {

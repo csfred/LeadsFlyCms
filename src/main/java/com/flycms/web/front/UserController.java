@@ -3,7 +3,6 @@ import com.flycms.core.utils.Base64HelperUtils;
 import com.flycms.core.utils.CookieUtils;
 import com.flycms.core.utils.DateUtils;
 import com.flycms.core.utils.StringHelperUtils;
-import com.flycms.module.user.utils.UserSessionUtils;
 import com.flycms.constant.Const;
 import com.flycms.core.base.BaseController;
 import com.flycms.core.entity.DataVo;
@@ -12,7 +11,6 @@ import com.flycms.module.user.model.User;
 import com.flycms.module.user.service.UserService;
 import org.apache.commons.lang.math.NumberUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
 import org.springframework.validation.BindingResult;
@@ -22,6 +20,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
+import javax.annotation.Resource;
 import javax.imageio.ImageIO;
 import javax.validation.Valid;
 import java.awt.image.BufferedImage;
@@ -33,13 +32,18 @@ import java.util.List;
 
 @Controller
 public class UserController extends BaseController {
-    @Autowired
+    @Resource
     protected UserService userService;
 
-    @Autowired
+    @Resource
     private ImagesService imagesService;
 
-    //用户注册
+    /**
+     * 用户注册
+     * @param invite
+     * @param modelMap
+     * @return
+     */
     @GetMapping(value = "/reg")
     public String userReg(@RequestParam(value = "invite", required = false) String invite,ModelMap modelMap){
         if(invite==null){
@@ -61,7 +65,8 @@ public class UserController extends BaseController {
      */
     @ResponseBody
     @PostMapping(value = "/ucenter/mobilecode")
-    public DataVo getAddUserMobileCode(@RequestParam(value = "username", required = false) String username,@RequestParam(value = "captcha", required = false) String captcha) throws Exception {
+    public DataVo getAddUserMobileCode(@RequestParam(value = "username", required = false) String username,
+                                       @RequestParam(value = "captcha", required = false) String captcha) throws Exception {
         DataVo data = DataVo.failure("操作失败");
         String kaptcha = (String) session.getAttribute("kaptcha");
         // 校验验证码
@@ -154,7 +159,12 @@ public class UserController extends BaseController {
         return data = userService.addUserReg(1,phoneNumber, password,mobilecode,invite,request,response);
     }
 
-    //用户登录页面
+    /**
+     * 用户登录页面
+     * @param redirectUrl
+     * @param modelMap
+     * @return
+     */
     @GetMapping(value = "/login")
     public String userLogin(@RequestParam(value = "redirectUrl",required = false) String redirectUrl,ModelMap modelMap){
         if(getUser() != null){
@@ -164,7 +174,15 @@ public class UserController extends BaseController {
         return theme.getPcTemplate("user/login");
     }
 
-    //登录处理
+    /**
+     * 登录处理
+     * @param username
+     * @param password
+     * @param rememberMe
+     * @param redirectUrl
+     * @param captcha
+     * @return
+     */
     @ResponseBody
     @PostMapping(value = "/ucenter/login_act")
     public DataVo userLogin(
@@ -253,14 +271,24 @@ public class UserController extends BaseController {
         return data;
     }
 
-    //修改用户基本信息
+    /**
+     * 修改用户基本信息
+     * @param modelMap
+     * @return
+     */
     @GetMapping(value = "/ucenter/account")
     public String userAccount(ModelMap modelMap){
         modelMap.addAttribute("user", getUser());
         return theme.getPcTemplate("user/account");
     }
 
-    //更新用户基本信息
+
+    /**
+     * 更新用户基本信息
+     * @param user
+     * @param result
+     * @return
+     */
     @PostMapping("/ucenter/account_update")
     @ResponseBody
     public DataVo updateUserAccount(@Valid User user, BindingResult result){
@@ -305,7 +333,11 @@ public class UserController extends BaseController {
         return data;
     }
 
-    //安全手机账号设置
+    /**
+     * 安全手机账号设置
+     * @param modelMap
+     * @return
+     */
     @GetMapping(value = "/ucenter/safe_mobile")
     public String safeMobile(ModelMap modelMap){
         modelMap.addAttribute("user", getUser());
@@ -367,7 +399,11 @@ public class UserController extends BaseController {
         return data;
     }
 
-    //设置安全邮箱账号
+    /**
+     * 设置安全邮箱账号
+     * @param modelMap
+     * @return
+     */
     @GetMapping(value = "/ucenter/safe_email")
     public String safeEmail(ModelMap modelMap){
         modelMap.addAttribute("user", getUser());
@@ -416,35 +452,56 @@ public class UserController extends BaseController {
         return data;
     }
 
-    //我的积分
+    /**
+     * 我的积分
+     * @param modelMap
+     * @return
+     */
     @GetMapping(value = "/ucenter/integral")
     public String userIntegral(ModelMap modelMap){
         modelMap.addAttribute("user", getUser());
         return theme.getPcTemplate("user/integral");
     }
 
-    //我的退款申请
+    /**
+     * 我的退款申请
+     * @param modelMap
+     * @return
+     */
     @GetMapping(value = "/ucenter/refunds")
     public String userRefunds(ModelMap modelMap){
         modelMap.addAttribute("user", getUser());
         return theme.getPcTemplate("user/refunds");
     }
 
-    //我的网站建议
+    /**
+     * 我的网站建议
+     * @param modelMap
+     * @return
+     */
     @GetMapping(value = "/ucenter/complain")
     public String userComplain(ModelMap modelMap){
         modelMap.addAttribute("user", getUser());
         return theme.getPcTemplate("user/complain");
     }
 
-    //我的产品收藏
+    /**
+     * 我的产品收藏
+     * @param modelMap
+     * @return
+     */
     @GetMapping(value = "/ucenter/favorite")
     public String userFavorite(ModelMap modelMap){
         modelMap.addAttribute("user", getUser());
         return theme.getPcTemplate("user/favorite");
     }
 
-    //线上推广列表
+    /**
+     * 线上推广列表
+     * @param p
+     * @param modelMap
+     * @return
+     */
     @GetMapping(value = "/ucenter/invite")
     public String userInvite(@RequestParam(value = "p", defaultValue = "1") int p,ModelMap modelMap){
         modelMap.addAttribute("user", getUser());
@@ -452,7 +509,12 @@ public class UserController extends BaseController {
         return theme.getPcTemplate("user/invite");
     }
 
-    //我的账户余额
+    /**
+     * 我的账户余额
+     * @param p
+     * @param modelMap
+     * @return
+     */
     @GetMapping(value = "/ucenter/account_log")
     public String userAccount_log(@RequestParam(value = "p", defaultValue = "1") int p,ModelMap modelMap){
         modelMap.addAttribute("p", p);
@@ -460,35 +522,55 @@ public class UserController extends BaseController {
         return theme.getPcTemplate("user/account_log");
     }
 
-    //我的账户余额体现申请
+    /**
+     * 我的账户余额体现申请
+     * @param modelMap
+     * @return
+     */
     @GetMapping(value = "/ucenter/withdraw")
     public String userWithdraw(ModelMap modelMap){
         modelMap.addAttribute("user", getUser());
         return theme.getPcTemplate("user/withdraw");
     }
 
-    //我的在线充值
+    /**
+     * 我的在线充值
+     * @param modelMap
+     * @return
+     */
     @GetMapping(value = "/ucenter/online_recharge")
     public String userOnlineRecharge(ModelMap modelMap){
         modelMap.addAttribute("user", getUser());
         return theme.getPcTemplate("user/online_recharge");
     }
 
-    //我的收货地址管理
+    /**
+     * 我的收货地址管理
+     * @param modelMap
+     * @return
+     */
     @GetMapping(value = "/ucenter/address")
     public String userAddress(ModelMap modelMap){
         modelMap.addAttribute("user", getUser());
         return theme.getPcTemplate("user/address");
     }
 
-    //我的个人信息
+    /**
+     * 我的个人信息
+     * @param modelMap
+     * @return
+     */
     @GetMapping(value = "/ucenter/info")
     public String userInfo(ModelMap modelMap){
         modelMap.addAttribute("user", getUser());
         return theme.getPcTemplate("user/info");
     }
 
-    //我的密码修改
+    /**
+     * 我的密码修改
+     * @param modelMap
+     * @return
+     */
     @GetMapping(value = "/ucenter/password")
     public String userPassword(ModelMap modelMap){
         modelMap.addAttribute("user", getUser());
@@ -565,7 +647,11 @@ public class UserController extends BaseController {
         return data;
     }
 
-    //处理关注用户信息
+    /**
+     * 处理关注用户信息
+     * @param id
+     * @return
+     */
     @ResponseBody
     @PostMapping(value = "/ucenter/user/follow")
     public DataVo userFollow(@RequestParam(value = "id", required = false) String id) {
@@ -587,7 +673,7 @@ public class UserController extends BaseController {
         return data;
     }
 
-    /*
+    /**
      *
      * 前台JS读取用户登录状态判断
      *
