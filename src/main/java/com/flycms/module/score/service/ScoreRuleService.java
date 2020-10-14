@@ -241,7 +241,7 @@ public class ScoreRuleService {
         }
         Date addtime=null;
         if(createTime!=null){
-            addtime=DateUtils.fomatDate(createTime);
+            addtime=DateUtils.formatDate(createTime);
         }
         pageVo.setCount(scoreRuleDao.getScoreRuleCount(name, addtime, status));
         List<ScoreRule> userlist = scoreRuleDao.getScoreRuleList(name, addtime, status, orderby, order, pageVo.getOffset(), pageVo.getRows());

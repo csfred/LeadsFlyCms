@@ -63,7 +63,7 @@
 
                 <div class="index-list">
                     <@fly_infopage infoType="2" categoryId="${id!}" p="${p!}">
-                    <#if info_page?? && info_page.list?? && info_page.list.size > 0>
+                    <#if info_page?? && info_page.list?? && info_page.list?size gt 0>
                     <#list info_page.list as list>
                     <#if list.infoType=1>
                     <#include "../common/type_article.html">

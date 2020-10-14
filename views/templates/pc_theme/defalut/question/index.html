@@ -53,9 +53,9 @@
 
                 <div class="index-list">
                     <@fly_infopage infoType="1" p="${p!}">
-                    <#if info_page?? && info_page.list?? && info_page.list.size gt 0>
+                    <#if info_page?? && info_page.list?? && info_page.list?size gt 0>
                     <#list info_page.list as list>
-                    <#if list.infoType=0>
+                    <#if list?? && list.infoType=0>
                     <#include "../common/type_question.html">
                     </#if>
                     </#list>

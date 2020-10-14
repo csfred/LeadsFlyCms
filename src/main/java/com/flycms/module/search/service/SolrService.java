@@ -1,6 +1,8 @@
 package com.flycms.module.search.service;
 
 
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONArray;
 import com.flycms.constant.SolrConst;
 import com.flycms.core.entity.PageVo;
 import com.flycms.core.utils.DateUtils;
@@ -12,8 +14,8 @@ import com.flycms.module.question.service.QuestionService;
 import com.flycms.module.search.model.Info;
 import com.flycms.module.share.model.Share;
 import com.flycms.module.share.service.ShareService;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.log4j.Logger;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
@@ -22,27 +24,32 @@ import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import javax.annotation.Resource;
 import java.util.*;
 import java.io.IOException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 
+/**
+ * solr服务
+ * @author cs
+ * @date 2020/10/11
+ */
+@Slf4j
 @Service
 public class SolrService {
-	protected final Logger logger = Logger.getLogger(SolrService.class);
-	@Autowired
+	@Resource
 	private ArticleService articleService;
 
-    @Autowired
+    @Resource
     private ShareService shareService;
 
-    @Autowired
+    @Resource
     private QuestionService questionService;
 
-    @Autowired
+    @Resource
     private SolrConst solrConst;
 
     private static HttpSolrClient server = null;
@@ -53,11 +60,16 @@ public class SolrService {
         if (server == null) {
             server = new HttpSolrClient(solrConst.getServerUrl());
             server.setDefaultMaxConnectionsPerHost(1000);
-            server.setMaxTotalConnections(10000);// 最大连接数
-            server.setConnectionTimeout(60000);// 设置连接超时时间（单位毫秒） 1000
-            server.setSoTimeout(60000);//// 设置读数据超时时间(单位毫秒) 1000
-            server.setFollowRedirects(false);// 遵循从定向
-            server.setAllowCompression(true);// 允许压缩
+            // 最大连接数
+            server.setMaxTotalConnections(10000);
+            // 设置连接超时时间（单位毫秒） 1000
+            server.setConnectionTimeout(60000);
+            // 设置读数据超时时间(单位毫秒) 1000
+            server.setSoTimeout(60000);
+            // 遵循从定向
+            server.setFollowRedirects(false);
+            // 允许压缩
+            server.setAllowCompression(true);
         }
         return server;
     }
@@ -82,7 +94,7 @@ public class SolrService {
                 doc.addField("userId", question.getUserId());
                 doc.addField("categoryId","");
                 doc.addField("content", question.getContent());
-                doc.addField("createTime", DateUtils.getSolrDate(DateUtils.fomatDateToString(question.getCreateTime())));
+                doc.addField("createTime", DateUtils.getSolrDate(DateUtils.formatDateToString(question.getCreateTime())));
                 doc.addField("recommend", question.getRecommend());
                 doc.addField("weight", question.getWeight());
                 getServer().add(doc);
@@ -90,10 +102,8 @@ public class SolrService {
                 return true;
             }
             return false;
-        } catch (SolrServerException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
+        } catch (SolrServerException | IOException e) {
+            log.error(e.getMessage(),e);
         }
         return false;
     }
@@ -122,7 +132,7 @@ public class SolrService {
                     doc.addField("userId", question.getUserId());
                     doc.addField("categoryId", "");
                     doc.addField("content", question.getContent());
-                    doc.addField("createTime", DateUtils.getSolrDate(DateUtils.fomatDateToString(question.getCreateTime())));
+                    doc.addField("createTime", DateUtils.getSolrDate(DateUtils.formatDateToString(question.getCreateTime())));
                     doc.addField("recommend", question.getRecommend());
                     doc.addField("weight", question.getWeight());
                     docs.add(doc);
@@ -131,15 +141,11 @@ public class SolrService {
                 getServer().commit();
             }
             return true;
-        } catch (SolrServerException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
+        } catch (SolrServerException | IOException e) {
+            log.error(e.getMessage(),e);
         }
         return false;
     }
-
-
 
     /**
      * 将所有的文章信息都索引
@@ -165,7 +171,7 @@ public class SolrService {
                     doc.addField("userId", article.getUserId());
                     doc.addField("categoryId", article.getCategoryId());
                     doc.addField("content", article.getContent());
-                    doc.addField("createTime", DateUtils.getSolrDate(DateUtils.fomatDateToString(article.getCreateTime())));
+                    doc.addField("createTime", DateUtils.getSolrDate(DateUtils.formatDateToString(article.getCreateTime())));
                     doc.addField("recommend", article.getRecommend());
                     doc.addField("weight", article.getWeight());
                     docs.add(doc);
@@ -174,10 +180,8 @@ public class SolrService {
                 getServer().commit();
             }
             return true;
-        } catch (SolrServerException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
+        } catch (SolrServerException | IOException e) {
+            log.error(e.getMessage(),e);
         }
         return false;
     }
@@ -202,7 +206,7 @@ public class SolrService {
                 doc.addField("userId", article.getUserId());
                 doc.addField("categoryId", article.getCategoryId());
                 doc.addField("content", article.getContent());
-                doc.addField("createTime", DateUtils.getSolrDate(DateUtils.fomatDateToString(article.getCreateTime())));
+                doc.addField("createTime", DateUtils.getSolrDate(DateUtils.formatDateToString(article.getCreateTime())));
                 doc.addField("recommend", article.getRecommend());
                 doc.addField("weight", article.getWeight());
                 getServer().add(doc);
@@ -210,10 +214,8 @@ public class SolrService {
                 return true;
         	}
         	return false;
-        } catch (SolrServerException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
+        } catch (SolrServerException | IOException e) {
+            log.error(e.getMessage(),e);
         }
         return false;
     }
@@ -242,7 +244,7 @@ public class SolrService {
                     doc.addField("userId", share.getUserId());
                     doc.addField("categoryId", "");
                     doc.addField("content", share.getContent());
-                    doc.addField("createTime", DateUtils.getSolrDate(DateUtils.fomatDateToString(share.getCreateTime())));
+                    doc.addField("createTime", DateUtils.getSolrDate(DateUtils.formatDateToString(share.getCreateTime())));
                     doc.addField("recommend", share.getRecommend());
                     doc.addField("weight", share.getWeight());
                     docs.add(doc);
@@ -251,10 +253,8 @@ public class SolrService {
                 getServer().commit();
             }
             return true;
-        } catch (SolrServerException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
+        } catch (SolrServerException | IOException e) {
+            log.error(e.getMessage(),e);
         }
         return false;
     }
@@ -279,7 +279,7 @@ public class SolrService {
                 doc.addField("userId", share.getUserId());
                 doc.addField("categoryId",share.getCategoryId());
                 doc.addField("content", share.getContent());
-                doc.addField("createTime", DateUtils.getSolrDate(DateUtils.fomatDateToString(share.getCreateTime())));
+                doc.addField("createTime", DateUtils.getSolrDate(DateUtils.formatDateToString(share.getCreateTime())));
                 doc.addField("recommend", share.getRecommend());
                 doc.addField("weight", share.getWeight());
                 getServer().add(doc);
@@ -287,10 +287,8 @@ public class SolrService {
                 return true;
             }
             return false;
-        } catch (SolrServerException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
+        } catch (SolrServerException | IOException e) {
+            log.error(e.getMessage(),e);
         }
         return false;
     }
@@ -305,10 +303,8 @@ public class SolrService {
         try {
             getServer().deleteById(Md5Utils.getMD5(infoType+"-"+infoId));
             getServer().commit();
-        } catch (SolrServerException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
+        } catch (SolrServerException | IOException e) {
+            log.error(e.getMessage(),e);
         }
     }
 
@@ -320,10 +316,8 @@ public class SolrService {
             //删除查询到的索引信息
             getServer().deleteByQuery("*");
             getServer().commit(true, true);
-        } catch (SolrServerException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
+        } catch (SolrServerException | IOException e) {
+            log.error(e.getMessage(),e);
         }
     }
 
@@ -352,7 +346,8 @@ public class SolrService {
             page=1;
         }
         SolrQuery query = new SolrQuery();
-        if(!StringUtils.isEmpty(title) || (userId!=null && userId > 0) || (infoType!=null)) {
+        boolean bIsOk = !StringUtils.isEmpty(title) || (userId!=null && userId > 0) || (infoType!=null);
+        if(bIsOk) {
             // 创建组合条件串
             StringBuilder params = new StringBuilder("");
             // 按标题查询
@@ -391,50 +386,68 @@ public class SolrService {
         }else {
             query.setQuery("*:*");
         }
-        query.setStart(pageVo.getOffset()); // 设置"起始位置"：表示从结果集的第几条数据开始显示。默认下标是0开始
-        query.setRows(pageVo.getRows()); // 设置每页显示的行数
+        // 设置"起始位置"：表示从结果集的第几条数据开始显示。默认下标是0开始
+        query.setStart(pageVo.getOffset());
+        // 设置每页显示的行数
+        query.setRows(pageVo.getRows());
 
         query.set("qf","title^1");
-        query.set("fl", "*,score");  // 设置输出每条记录的索引分值
+        // 设置输出每条记录的索引分值
+        query.set("fl", "*,score");
 
         if (!StringUtils.isEmpty(title)) {
-            // 设置高亮显示———————
-            query.setHighlight(true); // 开启高亮功能
+            // 设置高亮显示——————— // 开启高亮功能
+            query.setHighlight(true);
             query.setParam("hl", "true");
-            query.setParam("hl.fl", "title");      //高亮字段
-            query.setHighlightSimplePre("<font color=\"red\">"); // 渲染标签
-            query.setHighlightSimplePost("</font>"); // 渲染标签
-            query.setHighlightSnippets(1);//结果分片数，默认为1
-            query.setHighlightFragsize(80);//每个分片的最大长度，默认为100
+            //高亮字段
+            query.setParam("hl.fl", "title");
+            // 渲染标签
+            query.setHighlightSimplePre("<font color=\"red\">");
+            // 渲染标签
+            query.setHighlightSimplePost("</font>");
+            //结果分片数，默认为1
+            query.setHighlightSnippets(1);
+            //每个分片的最大长度，默认为100
+            query.setHighlightFragsize(80);
         }
         if(!StringUtils.isEmpty(orderby)){
             if("recommend".equals(orderby)){
-                query.set("sort", "recommend desc");//按推荐值排序
+                //按推荐值排序
+                query.set("sort", "recommend desc");
             }else if("hot".equals(orderby)){
-                query.set("sort", "weight desc");//按权重值排序
+                //按权重值排序
+                query.set("sort", "weight desc");
             }
         }else{
-            query.set("sort", "score desc,createTime desc");//排序条件
+            //排序条件
+            query.set("sort", "score desc,createTime desc");
         }
 
         QueryResponse response = getServer().query(query);
         SolrDocumentList dlist = response.getResults();
-        Map<String,Map<String,List<String>>> highlightMap=response.getHighlighting();
-        System.out.println("文档个数：" + dlist.getNumFound());
-        //System.out.println(dlist.getMaxScore());
+        //Map<String,Map<String,List<String>>> highlightMap=response.getHighlighting()
+        //System.out.println("文档个数：" + dlist.getNumFound())
         // 第一个Map的键是文档的ID，第二个Map的键是高亮显示的字段名
         List<Info> list = new ArrayList<Info>();
-        Info bean = null;
+        Info bean;
+        JSONArray jsonArray;
         for (SolrDocument solrDocument : dlist) {
             bean = new Info();
             bean.setId(solrDocument.getFieldValue("id").toString());
-            bean.setShortUrl(solrDocument.getFieldValue("shortUrl").toString());
-            bean.setUserId(Long.parseLong(solrDocument.getFieldValue("userId").toString()));
-            bean.setTitle(solrDocument.getFieldValue("title").toString());
-            bean.setInfoId(Long.parseLong(solrDocument.getFieldValue("infoId").toString()));
-            bean.setInfoType(Integer.parseInt(solrDocument.getFieldValue("infoType").toString()));
-            bean.setContent(solrDocument.getFieldValue("content").toString());
-            String dt=solrDocument.getFieldValue("createTime").toString();
+            jsonArray = JSON.parseArray(solrDocument.getFieldValue("shortUrl").toString().replace("[","[\"").replace("]","\"]"));
+            bean.setShortUrl(jsonArray.getString(0));
+            jsonArray = JSON.parseArray(solrDocument.getFieldValue("userId").toString());
+            bean.setUserId(jsonArray.getLong(0));
+            jsonArray = JSON.parseArray(solrDocument.getFieldValue("title").toString().replace("[","[\"").replace("]","\"]"));
+            bean.setTitle(jsonArray.getString(0));
+            jsonArray = JSON.parseArray(solrDocument.getFieldValue("infoId").toString());
+            bean.setInfoId(jsonArray.getLong(0));
+            jsonArray = JSON.parseArray(solrDocument.getFieldValue("infoType").toString());
+            bean.setInfoType(jsonArray.getInteger(0));
+            jsonArray = JSON.parseArray(solrDocument.getFieldValue("content").toString().replace("[","[\"").replace("]","\"]"));
+            bean.setContent(jsonArray.getString(0));
+            jsonArray = JSON.parseArray(solrDocument.getFieldValue("createTime").toString().replace("[","[\"").replace("]","\"]"));
+            String dt=jsonArray.getString(0);
             SimpleDateFormat sdf1= new SimpleDateFormat("EEE MMM dd HH:mm:ss z yyyy", Locale.ENGLISH);
             SimpleDateFormat sdf2= new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
             bean.setCreateTime(sdf2.format(sdf1.parse(dt)));
@@ -452,18 +465,30 @@ public class SolrService {
      */
     public static String StrStartFind(String str){
         try {
-            boolean b = str.startsWith(" AND ");//判断字符串是否以‘AND’开始
+            //判断字符串是否以‘AND’开始
+            boolean b = str.startsWith(" AND ");
             if(b) {
                 return str.substring(str.indexOf(" AND ")+5,str.length());
             }return str ;
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error(e.getMessage(),e);
             return null;
         }
     }
 
-
-	//企业搜索翻页处理
+    /**
+     * 企业搜索翻页处理
+     * @param fullName
+     * @param city
+     * @param industry
+     * @param scale
+     * @param capital
+     * @param page
+     * @param rows
+     * @param maxdoc
+     * @return
+     * @throws IOException
+     */
 	public String labelPage(
 			String fullName,
 			String city,
@@ -477,12 +502,15 @@ public class SolrService {
 		
 		StringBuffer link=new StringBuffer();
 		if(maxdoc!=0){
-            int pagesize = 10;//每页显示记录数
+            //每页显示记录数
+            int pagesize = 10;
             if(rows>0) {
             	pagesize=rows;
             }
-            int liststep = 10;//最多显示分页页数
-            int pages = 1;//默认显示第一页
+            //最多显示分页页数
+            int liststep = 10;
+            //默认显示第一页
+            int pages = 1;
             if(page>1) {
             	//分页页码变量
             	pages = page;
@@ -492,14 +520,18 @@ public class SolrService {
             if(maxdoc>0) {
             	count = maxdoc;
             }
-            int pagescount = (int) Math.ceil((double) count / pagesize);//求总页数，ceil（num）取整不小于num
+            //求总页数，ceil（num）取整不小于num
+            int pagescount = (int) Math.ceil((double) count / pagesize);
             if (pagescount < pages) {
-                pages = pagescount;//如果分页变量大总页数，则将分页变量设计为总页数
+                //如果分页变量大总页数，则将分页变量设计为总页数
+                pages = pagescount;
             }
             if (pages < 1) {
-                pages = 1;//如果分页变量小于１,则将分页变量设为１
+                //如果分页变量小于１,则将分页变量设为１
+                pages = 1;
             }
-            int listbegin = (pages - (int) Math.ceil((double) liststep / 2));//从第几页开始显示分页信息
+            //从第几页开始显示分页信息
+            int listbegin = (pages - (int) Math.ceil((double) liststep / 2));
             if (listbegin < 1) {
                 listbegin = 1;
             }
@@ -512,7 +544,8 @@ public class SolrService {
             if(pages<=pagescount && pagescount<10){
             	listbegin=1;
             }
-            int listend = pages + liststep/2;//分页信息显示到第几页
+            //分页信息显示到第几页
+            int listend = pages + liststep/2;
             if (listend > pagescount) {
                 listend = pagescount + 1;
             }

@@ -76,7 +76,7 @@ public class UserService {
      * @throws Exception
      */
     @CacheEvict(value = "user", allEntries = true)
-    @Transactional
+    @Transactional(rollbackOn = RuntimeException.class)
     public DataVo addUserReg(int userType,String userName, String password, String code, String invite, HttpServletRequest request,HttpServletResponse response) throws Exception {
         DataVo data = DataVo.failure("请勿非法传递参数");
         if(Integer.parseInt(configService.getStringByKey("user_reg"))==0){
@@ -98,7 +98,16 @@ public class UserService {
                 //验证通过后修改本条记录为已验证
                 userDao.updateUserActivationByStatus(userName,code);
             }else {
-                return DataVo.failure("手机验证码错误");
+                //临时加入插入验证码方法，后续短信好了删除
+                if(addUserActivationCodeTmp(userName,1,code)){
+                    if (this.checkUserActivationCode(userName,1,code)) {
+                        userDao.updateUserActivationByStatus(userName,code);
+                    }else{
+                        return DataVo.failure("手机验证码错误");
+                    }
+                }else{
+                    return DataVo.failure("手机验证码入库错误");
+                }
             }
         }
         User user = new User();
@@ -152,7 +161,7 @@ public class UserService {
      * @return
      */
     @CacheEvict(value = "user", allEntries = true)
-    @Transactional
+    @Transactional(rollbackOn = RuntimeException.class)
     public DataVo adminAddUser(User user){
         DataVo data = DataVo.failure("操作失败");
         if(user.getUserName()==null){
@@ -187,7 +196,7 @@ public class UserService {
      * @throws Exception
      */
     @CacheEvict(value = "user", allEntries = true)
-    @Transactional
+    @Transactional(rollbackOn = RuntimeException.class)
     public DataVo regMobileCode(String phoneNumber) throws Exception {
         if(this.checkUserByMobile(phoneNumber,null)) {
             return DataVo.failure("该手机号码以注册或被占用！");
@@ -511,7 +520,7 @@ public class UserService {
      * @throws Exception
      */
     @CacheEvict(value = "user", allEntries = true)
-    @Transactional
+    @Transactional(rollbackOn = RuntimeException.class)
     public DataVo updatePassword(Long userId, String oldPassword, String password) throws Exception {
         DataVo data = DataVo.failure("操作失败");
         User user = userDao.findUserById(userId,0);
@@ -533,7 +542,7 @@ public class UserService {
      * @return
      */
     @CacheEvict(value = "user", allEntries = true)
-    @Transactional
+    @Transactional(rollbackOn = RuntimeException.class)
     public DataVo updateUserAccount(User user){
         DataVo data = DataVo.failure("操作失败");
         if(this.checkUserByNickName(user.getNickName(),user.getUserId())){
@@ -579,7 +588,7 @@ public class UserService {
      * @return
      * @throws Exception
      */
-    @Transactional
+    @Transactional(rollbackOn = RuntimeException.class)
     public DataVo safeMobileCode(Long userId,String phoneNumber) throws Exception {
         if(this.checkUserByMobile(phoneNumber,userId)) {
             return DataVo.failure("该手机号码以注册或被占用！");
@@ -605,7 +614,7 @@ public class UserService {
      * @throws Exception
      */
     @CacheEvict(value = "user", allEntries = true)
-    @Transactional
+    @Transactional(rollbackOn = RuntimeException.class)
     public DataVo updateSafeMobile(Long userId, String password, String mobile, String code) throws Exception {
         DataVo data = DataVo.failure("操作失败");
         User user = userDao.findUserById(userId,0);
@@ -643,7 +652,7 @@ public class UserService {
      * @throws Exception
      */
     @CacheEvict(value = "user", allEntries = true)
-    @Transactional
+    @Transactional(rollbackOn = RuntimeException.class)
     public DataVo updateSafeEmail(Long userId, String password, String userEmail, String code) throws Exception {
         DataVo data = DataVo.failure("操作失败");
         User user = userDao.findUserById(userId,0);
@@ -756,13 +765,18 @@ public class UserService {
         return DataVo.success("验证码已发送，请去邮箱查收！", DataVo.NOOP);
     }
 
-    //添加用户保持登录状态记录
+    /**
+     * 添加用户保持登录状态记录
+     * @param session
+     * @return
+     */
     public int updateUserSession(UserSession session) {
         return userDao.updateUserSession(session);
     }
     // ///////////////////////////////
     // /////        查询      ////////
     // ///////////////////////////////
+
     @Cacheable(value = "user",key="#shortUrl")
     public User findUserByShorturl(String shortUrl){
         return userDao.findUserByShorturl(shortUrl);
@@ -978,6 +992,31 @@ public class UserService {
     }
 
     /**
+     * 临时没有短信验证加入的方法
+     * @param userName
+     * @param codeType
+     * @param code
+     * @return
+     */
+    public boolean addUserActivationCodeTmp(String userName,Integer codeType,String code){
+        /**
+         * add by cs
+         * addUserActivation 本来是在短信验证后加入，但是短信目前无法使用，所以临时加
+         */
+        UserActivation ua = new UserActivation();
+        ua.setCode(code);
+        ua.setCodeType(codeType);
+        ua.setReferStatus(0);
+        ua.setUserName(userName);
+        ua.setReferTime(DateUtils.formatTimestamp(DateUtils.addMinutes(-2)));
+        int ret = userDao.addUserActivation(ua);
+        if(ret > 0){
+            return true;
+        }
+        return false;
+    }
+
+    /**
      * 查询是否已关注或者是该用户粉丝
      *不存在返回：true
      *
@@ -1139,6 +1178,6 @@ public class UserService {
      */
     public boolean checkUserSessionByUserId(Long userId) {
         int totalCount = userDao.checkUserSessionByUserId(userId);
-        return totalCount > 0 ? true : false;
+        return totalCount > 0;
     }
 }

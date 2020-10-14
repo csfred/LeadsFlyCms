@@ -3,55 +3,68 @@ package com.flycms.web.tags;
 import com.flycms.core.base.AbstractTagPlugin;
 import com.flycms.core.entity.PageVo;
 import com.flycms.core.utils.StringHelperUtils;
-import com.flycms.module.question.model.Answer;
 import com.flycms.module.search.model.Info;
 import com.flycms.module.search.service.SolrService;
 import freemarker.core.Environment;
 import freemarker.template.*;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import javax.annotation.Resource;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Open source house, All rights reserved
- * 开发公司：28844.com<br/>
- * 版权：开源中国<br/>
- *
- * @author sunkaifei
- * 
+ * 分页信息整理
+ * @author cs
+ * @date 2020/10/11
  */
 @Service
 public class Infopage extends AbstractTagPlugin {
 
-	@Autowired
+	@Resource
 	private SolrService solrService;
 
 	@Override
 	@SuppressWarnings({ "rawtypes", "unchecked" })
 	public void execute(Environment env, Map params, TemplateModel[] loopVars, TemplateDirectiveBody body) throws TemplateException, IOException {
 		DefaultObjectWrapperBuilder builder = new DefaultObjectWrapperBuilder(Configuration.VERSION_2_3_25);
-		// 获取页面的参数
-		//问题id
+		/**
+		 * 问题id 获取页面的参数
+		 */
 		String title = null;
-		//用户id
+		/**
+		 * 用户id
+		 */
 		Long userId = null;
-		//信息类型，0是全部，1问答，2文章，3分享
+		/**
+		 * 信息类型，0是全部，1问答，2文章，3分享
+		 */
 		Integer infoType = null;
-		//按信息分类id查询
+		/**
+		 * 按信息分类id查询
+		 */
 		Long categoryId = null;
-		//需要排除id
+		/**
+		 * 需要排除id
+		 */
 		String notId=null;
-		//排序规则,recommend按推荐值排序，weight按权重值排序
+		/**
+		 * 排序规则,recommend按推荐值排序，weight按权重值排序
+		 */
 		String orderby=null;
-		//当前页数
+		/**
+		 * 当前页数
+		 */
 		int p = 1;
-		//每页记录数
+		/**
+		 * 每页记录数
+		 */
 		int rows = 10;
-		//处理标签变量
+		/**
+		 * 处理标签变量
+		 */
 		Map<String, TemplateModel> paramWrap = new HashMap<String, TemplateModel>(params);
 		for(String str:paramWrap.keySet()){ 
 			if("title".equals(str)){

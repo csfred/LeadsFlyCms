@@ -56,10 +56,18 @@ public interface UserDao {
      */
     public int addUserAndGroup(@Param("groupId") Long groupId,@Param("userId") Long userId);
 
-    //添加用户注册验证操作记录
+    /**
+     * 添加用户注册验证操作记录
+     * @param userActivation
+     * @return
+     */
     public int addUserActivation(UserActivation userActivation);
 
-    //添加用户关注操作记录
+    /**
+     * 添加用户关注操作记录
+     * @param userFans
+     * @return
+     */
     public int addUserFans(UserFans userFans);
 
     // ///////////////////////////////

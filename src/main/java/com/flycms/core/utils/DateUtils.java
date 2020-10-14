@@ -58,6 +58,10 @@ public class DateUtils {
 	public static String getDay() {
 		return sdfDay.format(new Date());
 	}
+
+	public static Date getCurrentDate(){
+	    return Calendar.getInstance().getTime();
+    }
 	
 	/**
 	 * 获取YYYYMMDD格式
@@ -87,10 +91,10 @@ public class DateUtils {
 	* @author luguosui
 	 */
 	public static boolean compareDate(String s, String e) {
-		if(fomatDate(s)==null||fomatDate(e)==null){
+		if(formatDate(s)==null||formatDate(e)==null){
 			return false;
 		}
-		return fomatDate(s).getTime() >=fomatDate(e).getTime();
+		return formatDate(s).getTime() >=formatDate(e).getTime();
 	}
 
 	/**
@@ -98,10 +102,20 @@ public class DateUtils {
 	 * 
 	 * @return
 	 */
-	public static Date fomatDate(String date) {
+	public static Date formatDate(String date) {
 		DateFormat fmt = new SimpleDateFormat("yyyy-MM-dd");
 		try {
 			return fmt.parse(date);
+		} catch (ParseException e) {
+			e.printStackTrace();
+			return null;
+		}
+	}
+
+	public static Date formatTimestamp(String timestamp) {
+		DateFormat fmt = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
+		try {
+			return fmt.parse(timestamp);
 		} catch (ParseException e) {
 			e.printStackTrace();
 			return null;
@@ -116,7 +130,7 @@ public class DateUtils {
 	 * 
 	 * @return
 	 */
-	public static String fomatString(String date) {
+	public static String formatString(String date) {
 		DateFormat fmt = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 		try {
 			Date d = fmt.parse(date);
@@ -135,7 +149,7 @@ public class DateUtils {
 	 *
 	 * @return
 	 */
-	public static String fomatDateToString(Date date) {
+	public static String formatDateToString(Date date) {
 		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 		return sdf.format(date);
 	}
@@ -148,7 +162,7 @@ public class DateUtils {
 	 * 
 	 * @return
 	 */
-	public static String fomatSolrDate(String date) {
+	public static String formatSolrDate(String date) {
 		DateFormat fmt = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'"); 
 		try {
 			Date d = sdf.parse(date);
@@ -167,7 +181,7 @@ public class DateUtils {
 	 * 
 	 * @return
 	 */
-	public static String fomatStringDate(String date) {
+	public static String formatStringDate(String date) {
 		DateFormat fmt = new SimpleDateFormat("yyyy-MM-dd");
 		try {
 			Date d = sdf.parse(date);
@@ -348,8 +362,9 @@ public class DateUtils {
         //昨天 86400000=24*60*60*1000 一天  
         if((today.getTime()-oldTime.getTime())>0 && (today.getTime()-oldTime.getTime())<=86400000) {  
             return "昨天 "+dateString;  
-        }  
-        else if((today.getTime()-oldTime.getTime())<=0){ //至少是今天  
+        }
+        ////至少是今天
+        else if((today.getTime()-oldTime.getTime())<=0){
             return "今天 "+dateString;  
         } 
 	   return sdfTime.format(oldTime);
@@ -364,6 +379,57 @@ public class DateUtils {
 		sb.append(calendar.get(Calendar.YEAR)).append("-");
 		sb.append(calendar.get(Calendar.MONTH) + 1).append("-");
 		sb.append(calendar.get(Calendar.DAY_OF_MONTH));
+		return sb.toString();
+	}
+
+	// 加小时
+	public static String addHours(int hour) {
+		Calendar calendar = Calendar.getInstance();
+		calendar.add(Calendar.HOUR, hour);
+		StringBuffer sb = new StringBuffer();
+		sb.append(calendar.get(Calendar.YEAR)).append("-");
+		sb.append(calendar.get(Calendar.MONTH) + 1).append("-");
+		sb.append(calendar.get(Calendar.DAY_OF_MONTH));
+		int hour_1 = calendar.get(Calendar.HOUR);
+		int minute_1 = calendar.get(Calendar.MINUTE);
+		int second_1 = calendar.get(Calendar.SECOND);
+		sb.append(" ").append(hour_1 >= 10 ? hour_1 : "0"+hour_1);
+		sb.append(":").append(minute_1 >= 10 ? minute_1 : "0"+minute_1);
+		sb.append(":").append(second_1 >= 10 ? second_1 : "0"+second_1);
+		return sb.toString();
+	}
+
+	// 加分钟
+	public static String addMinutes(int minute) {
+		Calendar calendar = Calendar.getInstance();
+		calendar.add(Calendar.MINUTE, minute);
+		StringBuffer sb = new StringBuffer();
+		sb.append(calendar.get(Calendar.YEAR)).append("-");
+		sb.append(calendar.get(Calendar.MONTH) + 1).append("-");
+		sb.append(calendar.get(Calendar.DAY_OF_MONTH));
+		int hour_1 = calendar.get(Calendar.HOUR);
+		int minute_1 = calendar.get(Calendar.MINUTE);
+		int second_1 = calendar.get(Calendar.SECOND);
+		sb.append(" ").append(hour_1 >= 10 ? hour_1 : "0"+hour_1);
+		sb.append(":").append(minute_1 >= 10 ? minute_1 : "0"+minute_1);
+		sb.append(":").append(second_1 >= 10 ? second_1 : "0"+second_1);
+		return sb.toString();
+	}
+
+	// 加秒
+	public static String addSeconds(int second) {
+		Calendar calendar = Calendar.getInstance();
+		calendar.add(Calendar.SECOND, second);
+		StringBuffer sb = new StringBuffer();
+		sb.append(calendar.get(Calendar.YEAR)).append("-");
+		sb.append(calendar.get(Calendar.MONTH) + 1).append("-");
+		sb.append(calendar.get(Calendar.DAY_OF_MONTH));
+		int hour_1 = calendar.get(Calendar.HOUR);
+		int minute_1 = calendar.get(Calendar.MINUTE);
+		int second_1 = calendar.get(Calendar.SECOND);
+		sb.append(" ").append(hour_1 >= 10 ? hour_1 : "0"+hour_1);
+		sb.append(":").append(minute_1 >= 10 ? minute_1 : "0"+minute_1);
+		sb.append(":").append(second_1 >= 10 ? second_1 : "0"+second_1);
 		return sb.toString();
 	}
 
@@ -410,7 +476,8 @@ public class DateUtils {
 	    //按照减法原理，先day相减，不够向month借；然后month相减，不够向year借；最后year相减。
 	    if(day<0){
 	    	month -= 1;
-	    	now.add(Calendar.MONTH, -1);//得到上一个月，用来得到上个月的天数。
+			//得到上一个月，用来得到上个月的天数。
+	    	now.add(Calendar.MONTH, -1);
 	    	day = day + now.getActualMaximum(Calendar.DAY_OF_MONTH);
 	    }
 	    if(month<0){
