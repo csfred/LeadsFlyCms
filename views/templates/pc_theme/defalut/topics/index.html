@@ -7,8 +7,8 @@
     <title>话题广场 - ${seo_title!}</title>
     <meta name="keywords" content="${seo_keywords!}" />
     <meta name="description" content="${seo_description!}" />
-    <meta name="author" content="28844 Team" />
-    <meta name="copyright" content="2018 28844.com" />
+    <meta name="author" content="Lead Team" />
+    <meta name="copyright" content="2020 dq123.com" />
     <!-- Bootstrap -->
     <link href="/assets/js/vendors/bootstrap/css/bootstrap.min.css" rel="stylesheet">
     <link href="/assets/js/vendors/font-awesome/css/font-awesome.css" rel="stylesheet">
@@ -33,11 +33,13 @@
             <div class="col-xs-12 col-md-9 main">
                 <div class="widget-category">
                     <div class="topic-square">
-                        <@fly_login><#if status??>
-                        <a href="/people/${user.shortUrl!}/topics" class="topic-link-gray pull-right">
-                            <span>已关注 12 个话题</span>
-                        </a>
-                        </#if></@fly_login>
+                        <@fly_login>
+                            <#if status??>
+                                <a href="/people/${user.shortUrl!}/topics" class="topic-link-gray pull-right">
+                                    <span>已关注 12 个话题</span>
+                                </a>
+                            </#if>
+                        </@fly_login>
                         <h2><i class="fa fa-th-large"></i> 话题广场</h2>
                     </div>
                     <div class="col-sm-12">
@@ -51,52 +53,52 @@
                     </div>
                 </div>
                 <div class="index-list">
+                    <#if fly_topicinfopage??>
                     <@fly_topicinfopage p="${p!}">
-                    <#if topic_page?? && topic_page.list?? && topic_page.list?size gt 0>
-                    <#list topic_page.list as list>
-                    <#if list.infoType=0>
-                    <#include "../common/type_question.html">
+                        <#if topic_page?? && topic_page.list?? && topic_page.list?size gt 0>
+                            <#list topic_page.list as list>
+                                <#if list.infoType=0>
+                                    <#include "../common/type_question.html">
+                                </#if>
+                                <#if list.infoType=1>
+                                    <#include "../common/type_article.html">
+                                </#if>
+                                <#if list.infoType=2>
+                                    <#include "../common/type_share.html">
+                                </#if>
+                            </#list>
+                        <#else>
+                            <div class="init">
+                                <p class="text-center"">
+                                    (ﾟ∀ﾟ　)<br>  暂时没有任何数据
+                                </p>
+                            </div>
+                        </#if>
+                        <div class="text-center">
+                            <ul class="pagination">
+                                <#if topic_page??>
+                                    ${topic_page.pageNumHtml}
+                                </#if>
+                            </ul>
+                        </div>
+                    </@fly_topicinfopage>
                     </#if>
-                    <#if list.infoType=1>
-                    <#include "../common/type_article.html">
-                    </#if>
-                    <#if list.infoType=2>
-                    <#include "../common/type_share.html">
-                    </#if>
-                    </#list>
-                    <#else>
-                    <div class="init">
-                        <p class="text-center"">
-                        (ﾟ∀ﾟ　)<br>  暂时没有任何数据
-                        </p>
-                    </div>
-                    </#if>
-                    <div class="text-center">
-                        <ul class="pagination">
-                            <#if topic_page??>
-                                ${topic_page.pageNumHtml}
-                            </#if>
-                        </ul>
-                    </div>
-                </@fly_topicinfopage>
+                </div>
             </div>
-        </div>
-        <div class="col-md-3 hidden-xs side">
-
-            <div class="widget-box">
-                <h2 class="h4 widget-box-title">热议话题 <a href="#" title="更多">»</a></h2>
-                <ul class="taglist-inline multi">
-                    <@fly_topicpage rows="25">
-                    <#list topic_page.list as list>
-                    <li class="tagPopup"><a class="tag" data-toggle="popover"  href="/topics/${list.shortUrl!}">${list.topic!}</a></li>
-                    </#list>
-                    </@fly_topicpage>
-                </ul>
+            <div class="col-md-3 hidden-xs side">
+                <div class="widget-box">
+                    <h2 class="h4 widget-box-title">热议话题 <a href="#" title="更多">»</a></h2>
+                    <ul class="taglist-inline multi">
+                        <@fly_topicpage rows="25">
+                            <#list topic_page.list as list>
+                                <li class="tagPopup"><a class="tag" data-toggle="popover"  href="/topics/${list.shortUrl!}">${list.topic!}</a></li>
+                            </#list>
+                        </@fly_topicpage>
+                    </ul>
+                </div>
             </div>
         </div>
     </div>
-
-</div>
 </div>
 
 <#include "../common/footer.html">

@@ -55,6 +55,7 @@
                     </div>
                 </div>
                 <div class="index-list">
+                    <#if topicId??>
                     <@fly_topicinfopage topicId="${topic.id!}" p="${p!}">
                     <#if topic_page?? && topic_page.list?? && topic_page.list?size gt 0>
                     <#list topic_page.list as list>
@@ -83,6 +84,7 @@
                         </ul>
                     </div>
                 </@fly_topicinfopage>
+                </#if>
             </div>
         </div>
         <div class="col-md-3 hidden-xs side">
