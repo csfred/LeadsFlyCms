@@ -6,25 +6,22 @@ import com.flycms.module.topic.model.TopicInfo;
 import com.flycms.module.topic.service.TopicService;
 import freemarker.core.Environment;
 import freemarker.template.*;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import javax.annotation.Resource;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Open source house, All rights reserved
- * 开发公司：28844.com<br/>
- * 版权：开源中国<br/>
  *
- * @author sunkaifei
- * 
+ * @author cs
+ * @date 2020/10/11
  */
 @Service
-public class Topicinfopage extends AbstractTagPlugin {
+public class TopicInfoPage extends AbstractTagPlugin {
 
-	@Autowired
+	@Resource
 	private TopicService topicService;
 
 	@SuppressWarnings({ "rawtypes", "unchecked" })
@@ -82,17 +79,12 @@ public class Topicinfopage extends AbstractTagPlugin {
 			}
 		}
 		// 获取文件的分页
-		System.out.println("===================1==============");
 		try {
-			System.out.println("===================2==============");
 			PageVo<TopicInfo> pageVo = topicService.getTopicAndInfoListPage(infoType,topicId,status,orderby,order,p,rows);
-			System.out.println("===================3==============");
 			env.setVariable("topic_page", builder.build().wrap(pageVo));
 		} catch (Exception e) {
-			System.out.println("===================4==============");
 			env.setVariable("topic_page", builder.build().wrap(null));
 		}
-		System.out.println("===================5==============");
 		body.render(env.getOut());
 	}
 }

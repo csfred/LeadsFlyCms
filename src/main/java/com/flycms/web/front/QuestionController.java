@@ -73,20 +73,18 @@ public class QuestionController extends BaseController {
     /**
      * 问答详细页面
      * @param id
-     * @param modelMap
      * @return
      */
     @ResponseBody
     @RequestMapping(value = "/findQuestionById/{id}")
-    public DataVo findQuestionById(@PathVariable(value = "id", required = false) String id,ModelMap modelMap){
-        DataVo data = DataVo.failure("操作失败");
+    public DataVo findQuestionById(@PathVariable(value = "id", required = false) String id){
         if (!NumberUtils.isNumber(id)) {
-            return data = DataVo.failure("id参数错误");
+            return DataVo.failure("id参数错误");
         }
         Map<String, Object> map = new HashMap<>();
         Question question=questionService.findQuestionById(Long.parseLong(id),2);
         if(question==null){
-            return data = DataVo.failure("该内容不存在或者未审核！");
+            return DataVo.failure("该内容不存在或者未审核！");
         }else{
             //没有答案的时候直接读取问题内容，有回答的时候读取最新回答的答案内容
             if(question.getCountAnswer()==0){
